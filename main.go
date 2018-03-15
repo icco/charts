@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -54,33 +56,75 @@ func main() {
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 
 	r.Post("/chart/new", func(w http.ResponseWriter, r *http.Request) {
+		id := worker.NextID()
+		idString := worker.IDString(id)
 		data := &JsonData{}
 		if err := render.Bind(r, data); err != nil {
+			log.Printf("Error parsing: %+v", err)
 			render.Render(w, r, ErrInvalidRequest(err))
 			return
 		}
 
 		log.Printf("recieved: %+v", data)
 
-		id := worker.NextID()
-		idString := worker.IDString(id)
+		b, err := json.Marshal(data)
+		if err != nil {
+			log.Printf("Error json-ing: %+v", err)
+			render.Render(w, r, ErrInvalidRequest(err))
+			return
+		}
+
+		err = ioutil.WriteFile(fmt.Sprintf("/tmp/%s.json", idString), b, 0644)
+		if err != nil {
+			log.Printf("Error saving: %+v", err)
+			render.Render(w, r, ErrInvalidRequest(err))
+			return
+		}
+
 		http.Redirect(w, r, fmt.Sprintf("/%s", idString), 302)
 	})
 
-	r.Get("/:id", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/{id:[A-z]+}", func(w http.ResponseWriter, r *http.Request) {
+		idString := chi.URLParam(r, "id")
+		data := &JsonData{}
+		jsonBlob, err := ioutil.ReadFile(fmt.Sprintf("/tmp/%s.json", idString))
+		if err != nil {
+			log.Printf("Error opening: %+v", err)
+			render.Render(w, r, ErrInvalidRequest(err))
+			return
+		}
+		err = json.Unmarshal(jsonBlob, &data)
+		if err != nil {
+			log.Printf("Error json-ing: %+v", err)
+			render.Render(w, r, ErrInvalidRequest(err))
+			return
+		}
+
+		xs := []float64{}
+		ys := []float64{}
+
+		for _, c := range data.Data {
+			xs = append(xs, c.X)
+			ys = append(ys, c.Y)
+		}
+
 		graph := chart.Chart{
 			Series: []chart.Series{
 				chart.ContinuousSeries{
-					XValues: []float64{1.0, 2.0, 3.0, 4.0},
-					YValues: []float64{1.0, 2.0, 3.0, 4.0},
+					XValues: xs,
+					YValues: ys,
 				},
 			},
 		}
-		w.Header().Set("Content-Type", "image/png")
-		err := graph.Render(chart.PNG, w)
+		log.Printf("Chart: %+v", graph)
+
+		err = graph.Render(chart.PNG, w)
 		if err != nil {
 			log.Printf("Err rendering: %+v", err)
+			render.Render(w, r, ErrInvalidRequest(err))
+			return
 		}
+		w.Header().Set("Content-Type", "image/png")
 	})
 
 	http.ListenAndServe(":8080", r)
