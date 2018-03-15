@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -61,6 +62,12 @@ func main() {
 
 		log.Printf("recieved: %+v", data)
 
+		id := worker.NextID()
+		idString := worker.IDString(id)
+		http.Redirect(w, r, fmt.Sprintf("/%s", idString), 302)
+	})
+
+	r.Get("/:id", func(w http.ResponseWriter, r *http.Request) {
 		graph := chart.Chart{
 			Series: []chart.Series{
 				chart.ContinuousSeries{
@@ -69,11 +76,6 @@ func main() {
 				},
 			},
 		}
-
-		id := worker.NextID()
-		idString := worker.IDString(id)
-		log.Printf(idString)
-
 		w.Header().Set("Content-Type", "image/png")
 		err := graph.Render(chart.PNG, w)
 		if err != nil {
