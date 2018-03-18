@@ -31,12 +31,14 @@ var worker sanic.Worker
 //   }
 // }
 type JsonData struct {
-	Format string `json:"format"`
-	Data   []struct {
-		X float64 `json:"x"`
-		Y float64 `json:"y"`
-	} `json:"data"`
+	Format string            `json:"format"`
+	Data   []Coordinate      `json:"data"`
 	Labels map[string]string `json:"labels"`
+}
+
+type Coordinate struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
 }
 
 func (a *JsonData) Bind(r *http.Request) error {
