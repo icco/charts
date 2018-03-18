@@ -120,6 +120,16 @@ func main() {
 		}
 
 		graph := chart.Chart{
+			XAxis: chart.XAxis{
+				Name:      "X",
+				NameStyle: chart.StyleShow(),
+				Style:     chart.StyleShow(),
+			},
+			YAxis: chart.YAxis{
+				Name:      "Y",
+				NameStyle: chart.StyleShow(),
+				Style:     chart.StyleShow(),
+			},
 			Series: []chart.Series{
 				chart.ContinuousSeries{
 					XValues: xs,
