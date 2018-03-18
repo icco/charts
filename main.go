@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -109,6 +110,11 @@ func main() {
 
 		xs := []float64{}
 		ys := []float64{}
+
+		// Sort the X or things look weird
+		sort.Slice(data.Data, func(i, j int) bool {
+			return data.Data[i].X > data.Data[j].X
+		})
 
 		for _, c := range data.Data {
 			xs = append(xs, c.X)
