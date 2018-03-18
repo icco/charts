@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -43,6 +44,12 @@ func (a *JsonData) Bind(r *http.Request) error {
 }
 
 func main() {
+	port := "8080"
+	if fromEnv := os.Getenv("PORT"); fromEnv != "" {
+		port = fromEnv
+	}
+	log.Printf("Starting up on %s", port)
+
 	worker := sanic.NewWorker7()
 
 	r := chi.NewRouter()
@@ -125,7 +132,8 @@ func main() {
 		w.Header().Set("Content-Type", "image/png")
 	})
 
-	http.ListenAndServe(":8080", r)
+	log.Printf("Server listening on port %s", port)
+	log.Fatal(http.ListenAndServe(":"+port, r))
 }
 
 type ErrResponse struct {
