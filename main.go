@@ -32,12 +32,10 @@ var worker sanic.Worker
 //   }
 // }
 type JsonData struct {
-	Format string `json:"format"`
-	Data   []struct {
-		X float64 `json:"x"`
-		Y float64 `json:"y"`
-	} `json:"data"`
+	Format string            `json:"format"`
+	Data   []json.RawMessage `json:"data"`
 	Labels map[string]string `json:"labels"`
+	APIKey string            `json:"api-key"`
 }
 
 func (a *JsonData) Bind(r *http.Request) error {
