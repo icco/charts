@@ -11,11 +11,16 @@ import (
 	"os"
 	"sort"
 
+	"contrib.go.opencensus.io/exporter/stackdriver"
+	"contrib.go.opencensus.io/exporter/stackdriver/monitoredresource"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
 	"github.com/ifo/sanic"
 	"github.com/wcharczuk/go-chart" //exposes "chart"
+	"go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/trace"
 )
 
 var worker sanic.Worker
@@ -45,11 +50,35 @@ func (a *JSONData) Bind(r *http.Request) error {
 }
 
 func main() {
+	if dbURL == "" {
+		log.Panicf("DATABASE_URL is empty!")
+	}
+
 	port := "8080"
 	if fromEnv := os.Getenv("PORT"); fromEnv != "" {
 		port = fromEnv
 	}
-	log.Printf("Starting up on %s", port)
+	log.Printf("Starting up on http://localhost:%s", port)
+
+	if os.Getenv("ENABLE_STACKDRIVER") != "" {
+		sd, err := stackdriver.NewExporter(stackdriver.Options{
+			ProjectID:               "icco-cloud",
+			MetricPrefix:            "charts",
+			MonitoredResource:       monitoredresource.Autodetect(),
+			DefaultMonitoringLabels: &stackdriver.Labels{},
+		})
+
+		if err != nil {
+			log.Fatalf("Failed to create the Stackdriver exporter: %v", err)
+		}
+		defer sd.Flush()
+
+		view.RegisterExporter(sd)
+		trace.RegisterExporter(sd)
+		trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
+	}
+
+	isDev := os.Getenv("NAT_ENV") != "production"
 
 	worker := sanic.NewWorker7()
 
@@ -148,8 +177,23 @@ func main() {
 		w.Header().Set("Content-Type", "image/png")
 	})
 
-	log.Printf("Server listening on port %s", port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	r.Get("/healthz", healthCheckHandler)
+
+	h := &ochttp.Handler{
+		Handler:          r,
+		IsPublicEndpoint: true,
+	}
+	if err := view.Register(ochttp.DefaultServerViews...); err != nil {
+		log.Fatal("Failed to register ochttp.DefaultServerViews")
+	}
+
+	log.Fatal(http.ListenAndServe(":"+port, h))
+}
+
+func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	Renderer.JSON(w, http.StatusOK, map[string]string{
+		"healthy": "true",
+	})
 }
 
 type ErrResponse struct {
