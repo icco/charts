@@ -13,10 +13,12 @@ import (
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/monitoredresource"
+	"github.com/basvanbeek/ocsql"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
 	"github.com/ifo/sanic"
+	"github.com/jinzhu/gorm"
 	"github.com/wcharczuk/go-chart" //exposes "chart"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/stats/view"
@@ -50,9 +52,15 @@ func (a *JSONData) Bind(r *http.Request) error {
 }
 
 func main() {
+	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		log.Panicf("DATABASE_URL is empty!")
 	}
+	driverName, err := ocsql.Register("postgres", ocsql.WithAllTraceOptions())
+	if err != nil {
+		log.Fatalf("unable to register our ocsql driver: %v\n", err)
+	}
+	db, err := gorm.Open(driverName, dbURL)
 
 	port := "8080"
 	if fromEnv := os.Getenv("PORT"); fromEnv != "" {
@@ -100,18 +108,9 @@ func main() {
 			return
 		}
 
-		log.Printf("recieved: %+v", data)
-
-		b, err := json.Marshal(data)
+		err = StoreGraphData(r.Context(), data, idString)
 		if err != nil {
-			log.Printf("Error json-ing: %+v", err)
-			render.Render(w, r, ErrInvalidRequest(err))
-			return
-		}
-
-		err = ioutil.WriteFile(fmt.Sprintf("/tmp/%s.json", idString), b, 0644)
-		if err != nil {
-			log.Printf("Error saving: %+v", err)
+			log.Printf("Error storing: %+v", err)
 			render.Render(w, r, ErrInvalidRequest(err))
 			return
 		}
@@ -191,7 +190,7 @@ func main() {
 }
 
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	Renderer.JSON(w, http.StatusOK, map[string]string{
+	render.JSON(w, r, map[string]string{
 		"healthy": "true",
 	})
 }
