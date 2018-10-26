@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -31,14 +33,14 @@ var worker sanic.Worker
 //     y: blab
 //   }
 // }
-type JsonData struct {
+type JSONData struct {
 	Format string            `json:"format"`
 	Data   []json.RawMessage `json:"data"`
 	Labels map[string]string `json:"labels"`
 	APIKey string            `json:"api-key"`
 }
 
-func (a *JsonData) Bind(r *http.Request) error {
+func (a *JSONData) Bind(r *http.Request) error {
 	return nil
 }
 
@@ -62,7 +64,7 @@ func main() {
 	r.Post("/chart/new", func(w http.ResponseWriter, r *http.Request) {
 		id := worker.NextID()
 		idString := worker.IDString(id)
-		data := &JsonData{}
+		data := &JSONData{}
 		if err := render.Bind(r, data); err != nil {
 			log.Printf("Error parsing: %+v", err)
 			render.Render(w, r, ErrInvalidRequest(err))
@@ -90,7 +92,7 @@ func main() {
 
 	r.Get("/{id:[A-z]+}", func(w http.ResponseWriter, r *http.Request) {
 		idString := chi.URLParam(r, "id")
-		data := &JsonData{}
+		data := &JSONData{}
 		jsonBlob, err := ioutil.ReadFile(fmt.Sprintf("/tmp/%s.json", idString))
 		if err != nil {
 			log.Printf("Error opening: %+v", err)
@@ -171,4 +173,16 @@ func ErrInvalidRequest(err error) render.Renderer {
 		StatusText:     "Invalid request.",
 		ErrorText:      err.Error(),
 	}
+}
+
+func StoreGraphData(ctx context.Context, d *JSONData, slug string) error {
+	return nil
+}
+
+func GetGraphData(ctx context.Context, slug string) (*JSONData, error) {
+	return nil, nil
+}
+
+func RenderGraph(ctx context.Context, slug string, b io.Writer) error {
+	return nil
 }
