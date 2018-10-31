@@ -17,8 +17,12 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/ifo/sanic"
-	"github.com/jinzhu/gorm"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	"github.com/wcharczuk/go-chart" //exposes "chart"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/stats/view"
@@ -27,7 +31,9 @@ import (
 
 var worker sanic.Worker
 
-// data format
+// JSONData is a struct representing a chart.
+//
+// data format on the wire
 // {
 //   format: line,pie,spark
 //   data: [
@@ -44,7 +50,7 @@ type JSONData struct {
 	Format string            `json:"format"`
 	Data   []json.RawMessage `json:"data"`
 	Labels map[string]string `json:"labels"`
-	APIKey string            `json:"api-key"`
+	APIKey string            `json:"apikey"`
 }
 
 func (a *JSONData) Bind(r *http.Request) error {
@@ -60,7 +66,22 @@ func main() {
 	if err != nil {
 		log.Fatalf("unable to register our ocsql driver: %v\n", err)
 	}
-	db, err := gorm.Open(driverName, dbURL)
+
+	db, err := sqlx.Connect(driverName, dbURL)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// Migrate DB
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	m, err := migrate.NewWithDatabaseInstance("file:///migrations", "postgres", driver)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	m.Up()
 
 	port := "8080"
 	if fromEnv := os.Getenv("PORT"); fromEnv != "" {
