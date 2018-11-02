@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -21,7 +22,6 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/ifo/sanic"
-	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/wcharczuk/go-chart" //exposes "chart"
 	"go.opencensus.io/plugin/ochttp"
@@ -67,7 +67,7 @@ func main() {
 		log.Fatalf("unable to register our ocsql driver: %v\n", err)
 	}
 
-	db, err := sqlx.Connect(driverName, dbURL)
+	db, err := sql.Open(driverName, dbURL)
 	if err != nil {
 		log.Fatalln(err)
 	}
