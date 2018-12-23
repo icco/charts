@@ -48,9 +48,15 @@ var worker sanic.Worker
 // }
 type JSONData struct {
 	Format string            `json:"format"`
-	Data   []json.RawMessage `json:"data"`
+	Data   []*Point          `json:"data"`
 	Labels map[string]string `json:"labels"`
 	APIKey string            `json:"apikey"`
+}
+
+type Point struct {
+	X      float64
+	Y      float64
+	Labels map[string]string `json:"labels"`
 }
 
 func (a *JSONData) Bind(r *http.Request) error {
@@ -107,7 +113,7 @@ func main() {
 		trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 	}
 
-	isDev := os.Getenv("NAT_ENV") != "production"
+	// isDev := os.Getenv("NAT_ENV") != "production"
 
 	worker := sanic.NewWorker7()
 
