@@ -1,24 +1,39 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"sort"
 
+	"contrib.go.opencensus.io/exporter/stackdriver"
+	"contrib.go.opencensus.io/exporter/stackdriver/monitoredresource"
+	"github.com/basvanbeek/ocsql"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/ifo/sanic"
+	_ "github.com/lib/pq"
 	"github.com/wcharczuk/go-chart" //exposes "chart"
+	"go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/trace"
 )
 
 var worker sanic.Worker
 
-// data format
+// JSONData is a struct representing a chart.
+//
+// data format on the wire
 // {
 //   format: line,pie,spark
 //   data: [
@@ -31,25 +46,74 @@ var worker sanic.Worker
 //     y: blab
 //   }
 // }
-type JsonData struct {
-	Format string `json:"format"`
-	Data   []struct {
-		X float64 `json:"x"`
-		Y float64 `json:"y"`
-	} `json:"data"`
+type JSONData struct {
+	Format string            `json:"format"`
+	Data   []*Point          `json:"data"`
+	Labels map[string]string `json:"labels"`
+	APIKey string            `json:"apikey"`
+}
+
+type Point struct {
+	X      float64
+	Y      float64
 	Labels map[string]string `json:"labels"`
 }
 
-func (a *JsonData) Bind(r *http.Request) error {
+func (a *JSONData) Bind(r *http.Request) error {
 	return nil
 }
 
 func main() {
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Panicf("DATABASE_URL is empty!")
+	}
+	driverName, err := ocsql.Register("postgres", ocsql.WithAllTraceOptions())
+	if err != nil {
+		log.Fatalf("unable to register our ocsql driver: %v\n", err)
+	}
+
+	db, err := sql.Open(driverName, dbURL)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// Migrate DB
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	m, err := migrate.NewWithDatabaseInstance("file://./migrations", "postgres", driver)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	m.Up()
+
 	port := "8080"
 	if fromEnv := os.Getenv("PORT"); fromEnv != "" {
 		port = fromEnv
 	}
-	log.Printf("Starting up on %s", port)
+	log.Printf("Starting up on http://localhost:%s", port)
+
+	if os.Getenv("ENABLE_STACKDRIVER") != "" {
+		sd, err := stackdriver.NewExporter(stackdriver.Options{
+			ProjectID:               "icco-cloud",
+			MetricPrefix:            "charts",
+			MonitoredResource:       monitoredresource.Autodetect(),
+			DefaultMonitoringLabels: &stackdriver.Labels{},
+		})
+
+		if err != nil {
+			log.Fatalf("Failed to create the Stackdriver exporter: %v", err)
+		}
+		defer sd.Flush()
+
+		view.RegisterExporter(sd)
+		trace.RegisterExporter(sd)
+		trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
+	}
+
+	// isDev := os.Getenv("NAT_ENV") != "production"
 
 	worker := sanic.NewWorker7()
 
@@ -64,25 +128,16 @@ func main() {
 	r.Post("/chart/new", func(w http.ResponseWriter, r *http.Request) {
 		id := worker.NextID()
 		idString := worker.IDString(id)
-		data := &JsonData{}
+		data := &JSONData{}
 		if err := render.Bind(r, data); err != nil {
 			log.Printf("Error parsing: %+v", err)
 			render.Render(w, r, ErrInvalidRequest(err))
 			return
 		}
 
-		log.Printf("recieved: %+v", data)
-
-		b, err := json.Marshal(data)
+		err = StoreGraphData(r.Context(), data, idString)
 		if err != nil {
-			log.Printf("Error json-ing: %+v", err)
-			render.Render(w, r, ErrInvalidRequest(err))
-			return
-		}
-
-		err = ioutil.WriteFile(fmt.Sprintf("/tmp/%s.json", idString), b, 0644)
-		if err != nil {
-			log.Printf("Error saving: %+v", err)
+			log.Printf("Error storing: %+v", err)
 			render.Render(w, r, ErrInvalidRequest(err))
 			return
 		}
@@ -92,7 +147,7 @@ func main() {
 
 	r.Get("/{id:[A-z]+}", func(w http.ResponseWriter, r *http.Request) {
 		idString := chi.URLParam(r, "id")
-		data := &JsonData{}
+		data := &JSONData{}
 		jsonBlob, err := ioutil.ReadFile(fmt.Sprintf("/tmp/%s.json", idString))
 		if err != nil {
 			log.Printf("Error opening: %+v", err)
@@ -148,8 +203,23 @@ func main() {
 		w.Header().Set("Content-Type", "image/png")
 	})
 
-	log.Printf("Server listening on port %s", port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	r.Get("/healthz", healthCheckHandler)
+
+	h := &ochttp.Handler{
+		Handler:          r,
+		IsPublicEndpoint: true,
+	}
+	if err := view.Register(ochttp.DefaultServerViews...); err != nil {
+		log.Fatal("Failed to register ochttp.DefaultServerViews")
+	}
+
+	log.Fatal(http.ListenAndServe(":"+port, h))
+}
+
+func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	render.JSON(w, r, map[string]string{
+		"healthy": "true",
+	})
 }
 
 type ErrResponse struct {
@@ -173,4 +243,16 @@ func ErrInvalidRequest(err error) render.Renderer {
 		StatusText:     "Invalid request.",
 		ErrorText:      err.Error(),
 	}
+}
+
+func StoreGraphData(ctx context.Context, d *JSONData, slug string) error {
+	return nil
+}
+
+func GetGraphData(ctx context.Context, slug string) (*JSONData, error) {
+	return nil, nil
+}
+
+func RenderGraph(ctx context.Context, slug string, b io.Writer) error {
+	return nil
 }

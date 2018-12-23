@@ -5,6 +5,6 @@ EXPOSE 8080
 WORKDIR /go/src/github.com/icco/charts
 COPY . .
 
-RUN go build .
+RUN go build -o /go/bin/charts .
 
 CMD ["/go/bin/charts"]
