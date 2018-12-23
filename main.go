@@ -83,7 +83,7 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	m, err := migrate.NewWithDatabaseInstance("file:///migrations", "postgres", driver)
+	m, err := migrate.NewWithDatabaseInstance("file://./migrations", "postgres", driver)
 	if err != nil {
 		log.Fatalln(err)
 	}
