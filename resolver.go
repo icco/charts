@@ -13,6 +13,16 @@ func (r *Resolver) Query() QueryResolver {
 	return &queryResolver{r}
 }
 
+// New returns a Config that has all of the proper settings for this graphql
+// server.
+func New() Config {
+	c := Config{
+		Resolvers: &Resolver{},
+	}
+
+	return c
+}
+
 type mutationResolver struct{ *Resolver }
 
 func (r *mutationResolver) CreateLineGraph(ctx context.Context, input NewLineGraph) (Graph, error) {
