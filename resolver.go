@@ -15,12 +15,18 @@ func (r *Resolver) Query() QueryResolver {
 
 type mutationResolver struct{ *Resolver }
 
-func (r *mutationResolver) CreateTodo(ctx context.Context, input NewTodo) (Todo, error) {
+func (r *mutationResolver) CreateLineGraph(ctx context.Context, input NewLineGraph) (Graph, error) {
+	panic("not implemented")
+}
+func (r *mutationResolver) CreatePieGraph(ctx context.Context, input NewPieGraph) (Graph, error) {
+	panic("not implemented")
+}
+func (r *mutationResolver) CreateTimeseriesGraph(ctx context.Context, input NewTimeseriesGraph) (Graph, error) {
 	panic("not implemented")
 }
 
 type queryResolver struct{ *Resolver }
 
-func (r *queryResolver) Todos(ctx context.Context) ([]Todo, error) {
+func (r *queryResolver) GetGraph(ctx context.Context, id string) (*Graph, error) {
 	panic("not implemented")
 }

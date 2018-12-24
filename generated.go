@@ -6,8 +6,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -39,19 +41,43 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Graph struct {
+		Id          func(childComplexity int) int
+		Description func(childComplexity int) int
+		Creator     func(childComplexity int) int
+		Data        func(childComplexity int) int
+	}
+
+	Meta struct {
+		Key   func(childComplexity int) int
+		Value func(childComplexity int) int
+	}
+
 	Mutation struct {
-		CreateTodo func(childComplexity int, input NewTodo) int
+		CreateLineGraph       func(childComplexity int, input NewLineGraph) int
+		CreatePieGraph        func(childComplexity int, input NewPieGraph) int
+		CreateTimeseriesGraph func(childComplexity int, input NewTimeseriesGraph) int
+	}
+
+	PairPoint struct {
+		X    func(childComplexity int) int
+		Y    func(childComplexity int) int
+		Meta func(childComplexity int) int
+	}
+
+	PiePoint struct {
+		Percent func(childComplexity int) int
+		Meta    func(childComplexity int) int
 	}
 
 	Query struct {
-		Todos func(childComplexity int) int
+		GetGraph func(childComplexity int, id string) int
 	}
 
-	Todo struct {
-		Id   func(childComplexity int) int
-		Text func(childComplexity int) int
-		Done func(childComplexity int) int
-		User func(childComplexity int) int
+	TimePoint struct {
+		Timestamp func(childComplexity int) int
+		Value     func(childComplexity int) int
+		Meta      func(childComplexity int) int
 	}
 
 	User struct {
@@ -61,23 +87,70 @@ type ComplexityRoot struct {
 }
 
 type MutationResolver interface {
-	CreateTodo(ctx context.Context, input NewTodo) (Todo, error)
+	CreateLineGraph(ctx context.Context, input NewLineGraph) (Graph, error)
+	CreatePieGraph(ctx context.Context, input NewPieGraph) (Graph, error)
+	CreateTimeseriesGraph(ctx context.Context, input NewTimeseriesGraph) (Graph, error)
 }
 type QueryResolver interface {
-	Todos(ctx context.Context) ([]Todo, error)
+	GetGraph(ctx context.Context, id string) (*Graph, error)
 }
 
-func field_Mutation_createTodo_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func field_Mutation_createLineGraph_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	args := map[string]interface{}{}
-	var arg0 NewTodo
+	var arg0 NewLineGraph
 	if tmp, ok := rawArgs["input"]; ok {
 		var err error
-		arg0, err = UnmarshalNewTodo(tmp)
+		arg0, err = UnmarshalNewLineGraph(tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+
+}
+
+func field_Mutation_createPieGraph_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	args := map[string]interface{}{}
+	var arg0 NewPieGraph
+	if tmp, ok := rawArgs["input"]; ok {
+		var err error
+		arg0, err = UnmarshalNewPieGraph(tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+
+}
+
+func field_Mutation_createTimeseriesGraph_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	args := map[string]interface{}{}
+	var arg0 NewTimeseriesGraph
+	if tmp, ok := rawArgs["input"]; ok {
+		var err error
+		arg0, err = UnmarshalNewTimeseriesGraph(tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+
+}
+
+func field_Query_getGraph_args(rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		var err error
+		arg0, err = graphql.UnmarshalID(tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 
 }
@@ -140,52 +213,151 @@ func (e *executableSchema) Schema() *ast.Schema {
 func (e *executableSchema) Complexity(typeName, field string, childComplexity int, rawArgs map[string]interface{}) (int, bool) {
 	switch typeName + "." + field {
 
-	case "Mutation.createTodo":
-		if e.complexity.Mutation.CreateTodo == nil {
+	case "Graph.id":
+		if e.complexity.Graph.Id == nil {
 			break
 		}
 
-		args, err := field_Mutation_createTodo_args(rawArgs)
+		return e.complexity.Graph.Id(childComplexity), true
+
+	case "Graph.description":
+		if e.complexity.Graph.Description == nil {
+			break
+		}
+
+		return e.complexity.Graph.Description(childComplexity), true
+
+	case "Graph.creator":
+		if e.complexity.Graph.Creator == nil {
+			break
+		}
+
+		return e.complexity.Graph.Creator(childComplexity), true
+
+	case "Graph.data":
+		if e.complexity.Graph.Data == nil {
+			break
+		}
+
+		return e.complexity.Graph.Data(childComplexity), true
+
+	case "Meta.key":
+		if e.complexity.Meta.Key == nil {
+			break
+		}
+
+		return e.complexity.Meta.Key(childComplexity), true
+
+	case "Meta.value":
+		if e.complexity.Meta.Value == nil {
+			break
+		}
+
+		return e.complexity.Meta.Value(childComplexity), true
+
+	case "Mutation.createLineGraph":
+		if e.complexity.Mutation.CreateLineGraph == nil {
+			break
+		}
+
+		args, err := field_Mutation_createLineGraph_args(rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateTodo(childComplexity, args["input"].(NewTodo)), true
+		return e.complexity.Mutation.CreateLineGraph(childComplexity, args["input"].(NewLineGraph)), true
 
-	case "Query.todos":
-		if e.complexity.Query.Todos == nil {
+	case "Mutation.createPieGraph":
+		if e.complexity.Mutation.CreatePieGraph == nil {
 			break
 		}
 
-		return e.complexity.Query.Todos(childComplexity), true
+		args, err := field_Mutation_createPieGraph_args(rawArgs)
+		if err != nil {
+			return 0, false
+		}
 
-	case "Todo.id":
-		if e.complexity.Todo.Id == nil {
+		return e.complexity.Mutation.CreatePieGraph(childComplexity, args["input"].(NewPieGraph)), true
+
+	case "Mutation.createTimeseriesGraph":
+		if e.complexity.Mutation.CreateTimeseriesGraph == nil {
 			break
 		}
 
-		return e.complexity.Todo.Id(childComplexity), true
+		args, err := field_Mutation_createTimeseriesGraph_args(rawArgs)
+		if err != nil {
+			return 0, false
+		}
 
-	case "Todo.text":
-		if e.complexity.Todo.Text == nil {
+		return e.complexity.Mutation.CreateTimeseriesGraph(childComplexity, args["input"].(NewTimeseriesGraph)), true
+
+	case "PairPoint.x":
+		if e.complexity.PairPoint.X == nil {
 			break
 		}
 
-		return e.complexity.Todo.Text(childComplexity), true
+		return e.complexity.PairPoint.X(childComplexity), true
 
-	case "Todo.done":
-		if e.complexity.Todo.Done == nil {
+	case "PairPoint.y":
+		if e.complexity.PairPoint.Y == nil {
 			break
 		}
 
-		return e.complexity.Todo.Done(childComplexity), true
+		return e.complexity.PairPoint.Y(childComplexity), true
 
-	case "Todo.user":
-		if e.complexity.Todo.User == nil {
+	case "PairPoint.meta":
+		if e.complexity.PairPoint.Meta == nil {
 			break
 		}
 
-		return e.complexity.Todo.User(childComplexity), true
+		return e.complexity.PairPoint.Meta(childComplexity), true
+
+	case "PiePoint.percent":
+		if e.complexity.PiePoint.Percent == nil {
+			break
+		}
+
+		return e.complexity.PiePoint.Percent(childComplexity), true
+
+	case "PiePoint.meta":
+		if e.complexity.PiePoint.Meta == nil {
+			break
+		}
+
+		return e.complexity.PiePoint.Meta(childComplexity), true
+
+	case "Query.getGraph":
+		if e.complexity.Query.GetGraph == nil {
+			break
+		}
+
+		args, err := field_Query_getGraph_args(rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetGraph(childComplexity, args["id"].(string)), true
+
+	case "TimePoint.timestamp":
+		if e.complexity.TimePoint.Timestamp == nil {
+			break
+		}
+
+		return e.complexity.TimePoint.Timestamp(childComplexity), true
+
+	case "TimePoint.value":
+		if e.complexity.TimePoint.Value == nil {
+			break
+		}
+
+		return e.complexity.TimePoint.Value(childComplexity), true
+
+	case "TimePoint.meta":
+		if e.complexity.TimePoint.Meta == nil {
+			break
+		}
+
+		return e.complexity.TimePoint.Meta(childComplexity), true
 
 	case "User.id":
 		if e.complexity.User.Id == nil {
@@ -247,6 +419,284 @@ type executionContext struct {
 	*executableSchema
 }
 
+var graphImplementors = []string{"Graph"}
+
+// nolint: gocyclo, errcheck, gas, goconst
+func (ec *executionContext) _Graph(ctx context.Context, sel ast.SelectionSet, obj *Graph) graphql.Marshaler {
+	fields := graphql.CollectFields(ctx, sel, graphImplementors)
+
+	out := graphql.NewOrderedMap(len(fields))
+	invalid := false
+	for i, field := range fields {
+		out.Keys[i] = field.Alias
+
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Graph")
+		case "id":
+			out.Values[i] = ec._Graph_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "description":
+			out.Values[i] = ec._Graph_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "creator":
+			out.Values[i] = ec._Graph_creator(ctx, field, obj)
+		case "data":
+			out.Values[i] = ec._Graph_data(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+
+	if invalid {
+		return graphql.Null
+	}
+	return out
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _Graph_id(ctx context.Context, field graphql.CollectedField, obj *Graph) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "Graph",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalID(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _Graph_description(ctx context.Context, field graphql.CollectedField, obj *Graph) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "Graph",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalString(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _Graph_creator(ctx context.Context, field graphql.CollectedField, obj *Graph) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "Graph",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Creator, nil
+	})
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*User)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+
+	if res == nil {
+		return graphql.Null
+	}
+
+	return ec._User(ctx, field.Selections, res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _Graph_data(ctx context.Context, field graphql.CollectedField, obj *Graph) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "Graph",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Data, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*DataPoint)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+
+	arr1 := make(graphql.Array, len(res))
+	var wg sync.WaitGroup
+
+	isLen1 := len(res) == 1
+	if !isLen1 {
+		wg.Add(len(res))
+	}
+
+	for idx1 := range res {
+		idx1 := idx1
+		rctx := &graphql.ResolverContext{
+			Index:  &idx1,
+			Result: res[idx1],
+		}
+		ctx := graphql.WithResolverContext(ctx, rctx)
+		f := func(idx1 int) {
+			if !isLen1 {
+				defer wg.Done()
+			}
+			arr1[idx1] = func() graphql.Marshaler {
+
+				if res[idx1] == nil {
+					return graphql.Null
+				}
+
+				return ec._DataPoint(ctx, field.Selections, res[idx1])
+			}()
+		}
+		if isLen1 {
+			f(idx1)
+		} else {
+			go f(idx1)
+		}
+
+	}
+	wg.Wait()
+	return arr1
+}
+
+var metaImplementors = []string{"Meta"}
+
+// nolint: gocyclo, errcheck, gas, goconst
+func (ec *executionContext) _Meta(ctx context.Context, sel ast.SelectionSet, obj *Meta) graphql.Marshaler {
+	fields := graphql.CollectFields(ctx, sel, metaImplementors)
+
+	out := graphql.NewOrderedMap(len(fields))
+	invalid := false
+	for i, field := range fields {
+		out.Keys[i] = field.Alias
+
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Meta")
+		case "key":
+			out.Values[i] = ec._Meta_key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "value":
+			out.Values[i] = ec._Meta_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+
+	if invalid {
+		return graphql.Null
+	}
+	return out
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _Meta_key(ctx context.Context, field graphql.CollectedField, obj *Meta) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "Meta",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Key, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalString(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _Meta_value(ctx context.Context, field graphql.CollectedField, obj *Meta) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "Meta",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Value, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalString(res)
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 // nolint: gocyclo, errcheck, gas, goconst
@@ -265,8 +715,18 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
-		case "createTodo":
-			out.Values[i] = ec._Mutation_createTodo(ctx, field)
+		case "createLineGraph":
+			out.Values[i] = ec._Mutation_createLineGraph(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "createPieGraph":
+			out.Values[i] = ec._Mutation_createPieGraph(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "createTimeseriesGraph":
+			out.Values[i] = ec._Mutation_createTimeseriesGraph(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalid = true
 			}
@@ -282,11 +742,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 }
 
 // nolint: vetshadow
-func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+func (ec *executionContext) _Mutation_createLineGraph(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := field_Mutation_createTodo_args(rawArgs)
+	args, err := field_Mutation_createLineGraph_args(rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -300,7 +760,7 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateTodo(rctx, args["input"].(NewTodo))
+		return ec.resolvers.Mutation().CreateLineGraph(rctx, args["input"].(NewLineGraph))
 	})
 	if resTmp == nil {
 		if !ec.HasError(rctx) {
@@ -308,11 +768,363 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(Todo)
+	res := resTmp.(Graph)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 
-	return ec._Todo(ctx, field.Selections, &res)
+	return ec._Graph(ctx, field.Selections, &res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _Mutation_createPieGraph(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := field_Mutation_createPieGraph_args(rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx := &graphql.ResolverContext{
+		Object: "Mutation",
+		Args:   args,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreatePieGraph(rctx, args["input"].(NewPieGraph))
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(Graph)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+
+	return ec._Graph(ctx, field.Selections, &res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _Mutation_createTimeseriesGraph(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := field_Mutation_createTimeseriesGraph_args(rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx := &graphql.ResolverContext{
+		Object: "Mutation",
+		Args:   args,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateTimeseriesGraph(rctx, args["input"].(NewTimeseriesGraph))
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(Graph)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+
+	return ec._Graph(ctx, field.Selections, &res)
+}
+
+var pairPointImplementors = []string{"PairPoint"}
+
+// nolint: gocyclo, errcheck, gas, goconst
+func (ec *executionContext) _PairPoint(ctx context.Context, sel ast.SelectionSet, obj *PairPoint) graphql.Marshaler {
+	fields := graphql.CollectFields(ctx, sel, pairPointImplementors)
+
+	out := graphql.NewOrderedMap(len(fields))
+	invalid := false
+	for i, field := range fields {
+		out.Keys[i] = field.Alias
+
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PairPoint")
+		case "x":
+			out.Values[i] = ec._PairPoint_x(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "y":
+			out.Values[i] = ec._PairPoint_y(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "meta":
+			out.Values[i] = ec._PairPoint_meta(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+
+	if invalid {
+		return graphql.Null
+	}
+	return out
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _PairPoint_x(ctx context.Context, field graphql.CollectedField, obj *PairPoint) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "PairPoint",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.X, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalFloat(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _PairPoint_y(ctx context.Context, field graphql.CollectedField, obj *PairPoint) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "PairPoint",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Y, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalFloat(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _PairPoint_meta(ctx context.Context, field graphql.CollectedField, obj *PairPoint) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "PairPoint",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Meta, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*Meta)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+
+	arr1 := make(graphql.Array, len(res))
+	var wg sync.WaitGroup
+
+	isLen1 := len(res) == 1
+	if !isLen1 {
+		wg.Add(len(res))
+	}
+
+	for idx1 := range res {
+		idx1 := idx1
+		rctx := &graphql.ResolverContext{
+			Index:  &idx1,
+			Result: res[idx1],
+		}
+		ctx := graphql.WithResolverContext(ctx, rctx)
+		f := func(idx1 int) {
+			if !isLen1 {
+				defer wg.Done()
+			}
+			arr1[idx1] = func() graphql.Marshaler {
+
+				if res[idx1] == nil {
+					return graphql.Null
+				}
+
+				return ec._Meta(ctx, field.Selections, res[idx1])
+			}()
+		}
+		if isLen1 {
+			f(idx1)
+		} else {
+			go f(idx1)
+		}
+
+	}
+	wg.Wait()
+	return arr1
+}
+
+var piePointImplementors = []string{"PiePoint"}
+
+// nolint: gocyclo, errcheck, gas, goconst
+func (ec *executionContext) _PiePoint(ctx context.Context, sel ast.SelectionSet, obj *PiePoint) graphql.Marshaler {
+	fields := graphql.CollectFields(ctx, sel, piePointImplementors)
+
+	out := graphql.NewOrderedMap(len(fields))
+	invalid := false
+	for i, field := range fields {
+		out.Keys[i] = field.Alias
+
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PiePoint")
+		case "percent":
+			out.Values[i] = ec._PiePoint_percent(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "meta":
+			out.Values[i] = ec._PiePoint_meta(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+
+	if invalid {
+		return graphql.Null
+	}
+	return out
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _PiePoint_percent(ctx context.Context, field graphql.CollectedField, obj *PiePoint) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "PiePoint",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Percent, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalFloat(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _PiePoint_meta(ctx context.Context, field graphql.CollectedField, obj *PiePoint) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "PiePoint",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Meta, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*Meta)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+
+	arr1 := make(graphql.Array, len(res))
+	var wg sync.WaitGroup
+
+	isLen1 := len(res) == 1
+	if !isLen1 {
+		wg.Add(len(res))
+	}
+
+	for idx1 := range res {
+		idx1 := idx1
+		rctx := &graphql.ResolverContext{
+			Index:  &idx1,
+			Result: res[idx1],
+		}
+		ctx := graphql.WithResolverContext(ctx, rctx)
+		f := func(idx1 int) {
+			if !isLen1 {
+				defer wg.Done()
+			}
+			arr1[idx1] = func() graphql.Marshaler {
+
+				if res[idx1] == nil {
+					return graphql.Null
+				}
+
+				return ec._Meta(ctx, field.Selections, res[idx1])
+			}()
+		}
+		if isLen1 {
+			f(idx1)
+		} else {
+			go f(idx1)
+		}
+
+	}
+	wg.Wait()
+	return arr1
 }
 
 var queryImplementors = []string{"Query"}
@@ -334,13 +1146,10 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "todos":
+		case "getGraph":
 			wg.Add(1)
 			go func(i int, field graphql.CollectedField) {
-				out.Values[i] = ec._Query_todos(ctx, field)
-				if out.Values[i] == graphql.Null {
-					invalid = true
-				}
+				out.Values[i] = ec._Query_getGraph(ctx, field)
 				wg.Done()
 			}(i, field)
 		case "__type":
@@ -359,63 +1168,38 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 }
 
 // nolint: vetshadow
-func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
+func (ec *executionContext) _Query_getGraph(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := field_Query_getGraph_args(rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	rctx := &graphql.ResolverContext{
 		Object: "Query",
-		Args:   nil,
+		Args:   args,
 		Field:  field,
 	}
 	ctx = graphql.WithResolverContext(ctx, rctx)
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Todos(rctx)
+		return ec.resolvers.Query().GetGraph(rctx, args["id"].(string))
 	})
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.([]Todo)
+	res := resTmp.(*Graph)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 
-	arr1 := make(graphql.Array, len(res))
-	var wg sync.WaitGroup
-
-	isLen1 := len(res) == 1
-	if !isLen1 {
-		wg.Add(len(res))
+	if res == nil {
+		return graphql.Null
 	}
 
-	for idx1 := range res {
-		idx1 := idx1
-		rctx := &graphql.ResolverContext{
-			Index:  &idx1,
-			Result: &res[idx1],
-		}
-		ctx := graphql.WithResolverContext(ctx, rctx)
-		f := func(idx1 int) {
-			if !isLen1 {
-				defer wg.Done()
-			}
-			arr1[idx1] = func() graphql.Marshaler {
-
-				return ec._Todo(ctx, field.Selections, &res[idx1])
-			}()
-		}
-		if isLen1 {
-			f(idx1)
-		} else {
-			go f(idx1)
-		}
-
-	}
-	wg.Wait()
-	return arr1
+	return ec._Graph(ctx, field.Selections, res)
 }
 
 // nolint: vetshadow
@@ -482,11 +1266,11 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.___Schema(ctx, field.Selections, res)
 }
 
-var todoImplementors = []string{"Todo"}
+var timePointImplementors = []string{"TimePoint"}
 
 // nolint: gocyclo, errcheck, gas, goconst
-func (ec *executionContext) _Todo(ctx context.Context, sel ast.SelectionSet, obj *Todo) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, todoImplementors)
+func (ec *executionContext) _TimePoint(ctx context.Context, sel ast.SelectionSet, obj *TimePoint) graphql.Marshaler {
+	fields := graphql.CollectFields(ctx, sel, timePointImplementors)
 
 	out := graphql.NewOrderedMap(len(fields))
 	invalid := false
@@ -495,24 +1279,19 @@ func (ec *executionContext) _Todo(ctx context.Context, sel ast.SelectionSet, obj
 
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("Todo")
-		case "id":
-			out.Values[i] = ec._Todo_id(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("TimePoint")
+		case "timestamp":
+			out.Values[i] = ec._TimePoint_timestamp(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalid = true
 			}
-		case "text":
-			out.Values[i] = ec._Todo_text(ctx, field, obj)
+		case "value":
+			out.Values[i] = ec._TimePoint_value(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalid = true
 			}
-		case "done":
-			out.Values[i] = ec._Todo_done(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalid = true
-			}
-		case "user":
-			out.Values[i] = ec._Todo_user(ctx, field, obj)
+		case "meta":
+			out.Values[i] = ec._TimePoint_meta(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalid = true
 			}
@@ -528,11 +1307,11 @@ func (ec *executionContext) _Todo(ctx context.Context, sel ast.SelectionSet, obj
 }
 
 // nolint: vetshadow
-func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.CollectedField, obj *Todo) graphql.Marshaler {
+func (ec *executionContext) _TimePoint_timestamp(ctx context.Context, field graphql.CollectedField, obj *TimePoint) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
-		Object: "Todo",
+		Object: "TimePoint",
 		Args:   nil,
 		Field:  field,
 	}
@@ -540,7 +1319,7 @@ func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.Collecte
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		return obj.Timestamp, nil
 	})
 	if resTmp == nil {
 		if !ec.HasError(rctx) {
@@ -548,18 +1327,18 @@ func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.Collecte
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(time.Time)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return graphql.MarshalID(res)
+	return graphql.MarshalTime(res)
 }
 
 // nolint: vetshadow
-func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.CollectedField, obj *Todo) graphql.Marshaler {
+func (ec *executionContext) _TimePoint_value(ctx context.Context, field graphql.CollectedField, obj *TimePoint) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
-		Object: "Todo",
+		Object: "TimePoint",
 		Args:   nil,
 		Field:  field,
 	}
@@ -567,7 +1346,7 @@ func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.Collec
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Text, nil
+		return obj.Value, nil
 	})
 	if resTmp == nil {
 		if !ec.HasError(rctx) {
@@ -575,18 +1354,18 @@ func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.Collec
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(float64)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return graphql.MarshalString(res)
+	return graphql.MarshalFloat(res)
 }
 
 // nolint: vetshadow
-func (ec *executionContext) _Todo_done(ctx context.Context, field graphql.CollectedField, obj *Todo) graphql.Marshaler {
+func (ec *executionContext) _TimePoint_meta(ctx context.Context, field graphql.CollectedField, obj *TimePoint) graphql.Marshaler {
 	ctx = ec.Tracer.StartFieldExecution(ctx, field)
 	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
 	rctx := &graphql.ResolverContext{
-		Object: "Todo",
+		Object: "TimePoint",
 		Args:   nil,
 		Field:  field,
 	}
@@ -594,7 +1373,7 @@ func (ec *executionContext) _Todo_done(ctx context.Context, field graphql.Collec
 	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
 	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Done, nil
+		return obj.Meta, nil
 	})
 	if resTmp == nil {
 		if !ec.HasError(rctx) {
@@ -602,38 +1381,47 @@ func (ec *executionContext) _Todo_done(ctx context.Context, field graphql.Collec
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.([]*Meta)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return graphql.MarshalBoolean(res)
-}
 
-// nolint: vetshadow
-func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.CollectedField, obj *Todo) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object: "Todo",
-		Args:   nil,
-		Field:  field,
+	arr1 := make(graphql.Array, len(res))
+	var wg sync.WaitGroup
+
+	isLen1 := len(res) == 1
+	if !isLen1 {
+		wg.Add(len(res))
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.User, nil
-	})
-	if resTmp == nil {
-		if !ec.HasError(rctx) {
-			ec.Errorf(ctx, "must not be null")
+
+	for idx1 := range res {
+		idx1 := idx1
+		rctx := &graphql.ResolverContext{
+			Index:  &idx1,
+			Result: res[idx1],
 		}
-		return graphql.Null
-	}
-	res := resTmp.(User)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+		ctx := graphql.WithResolverContext(ctx, rctx)
+		f := func(idx1 int) {
+			if !isLen1 {
+				defer wg.Done()
+			}
+			arr1[idx1] = func() graphql.Marshaler {
 
-	return ec._User(ctx, field.Selections, &res)
+				if res[idx1] == nil {
+					return graphql.Null
+				}
+
+				return ec._Meta(ctx, field.Selections, res[idx1])
+			}()
+		}
+		if isLen1 {
+			f(idx1)
+		} else {
+			go f(idx1)
+		}
+
+	}
+	wg.Wait()
+	return arr1
 }
 
 var userImplementors = []string{"User"}
@@ -2170,21 +2958,303 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 	return ec.___Type(ctx, field.Selections, res)
 }
 
-func UnmarshalNewTodo(v interface{}) (NewTodo, error) {
-	var it NewTodo
+func (ec *executionContext) _DataPoint(ctx context.Context, sel ast.SelectionSet, obj *DataPoint) graphql.Marshaler {
+	switch obj := (*obj).(type) {
+	case nil:
+		return graphql.Null
+	case PairPoint:
+		return ec._PairPoint(ctx, sel, &obj)
+	case *PairPoint:
+		return ec._PairPoint(ctx, sel, obj)
+	case PiePoint:
+		return ec._PiePoint(ctx, sel, &obj)
+	case *PiePoint:
+		return ec._PiePoint(ctx, sel, obj)
+	case TimePoint:
+		return ec._TimePoint(ctx, sel, &obj)
+	case *TimePoint:
+		return ec._TimePoint(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func UnmarshalMetaInput(v interface{}) (MetaInput, error) {
+	var it MetaInput
 	var asMap = v.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
-		case "text":
+		case "key":
 			var err error
-			it.Text, err = graphql.UnmarshalString(v)
+			it.Key, err = graphql.UnmarshalString(v)
 			if err != nil {
 				return it, err
 			}
-		case "userId":
+		case "value":
 			var err error
-			it.UserID, err = graphql.UnmarshalString(v)
+			it.Value, err = graphql.UnmarshalString(v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func UnmarshalNewLineGraph(v interface{}) (NewLineGraph, error) {
+	var it NewLineGraph
+	var asMap = v.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "description":
+			var err error
+			var ptr1 string
+			if v != nil {
+				ptr1, err = graphql.UnmarshalString(v)
+				it.Description = &ptr1
+			}
+
+			if err != nil {
+				return it, err
+			}
+		case "data":
+			var err error
+			var rawIf1 []interface{}
+			if v != nil {
+				if tmp1, ok := v.([]interface{}); ok {
+					rawIf1 = tmp1
+				} else {
+					rawIf1 = []interface{}{v}
+				}
+			}
+			it.Data = make([]*PairPointInput, len(rawIf1))
+			for idx1 := range rawIf1 {
+				var ptr2 PairPointInput
+				if rawIf1[idx1] != nil {
+					ptr2, err = UnmarshalPairPointInput(rawIf1[idx1])
+					it.Data[idx1] = &ptr2
+				}
+			}
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func UnmarshalNewPieGraph(v interface{}) (NewPieGraph, error) {
+	var it NewPieGraph
+	var asMap = v.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "description":
+			var err error
+			var ptr1 string
+			if v != nil {
+				ptr1, err = graphql.UnmarshalString(v)
+				it.Description = &ptr1
+			}
+
+			if err != nil {
+				return it, err
+			}
+		case "data":
+			var err error
+			var rawIf1 []interface{}
+			if v != nil {
+				if tmp1, ok := v.([]interface{}); ok {
+					rawIf1 = tmp1
+				} else {
+					rawIf1 = []interface{}{v}
+				}
+			}
+			it.Data = make([]*PiePointInput, len(rawIf1))
+			for idx1 := range rawIf1 {
+				var ptr2 PiePointInput
+				if rawIf1[idx1] != nil {
+					ptr2, err = UnmarshalPiePointInput(rawIf1[idx1])
+					it.Data[idx1] = &ptr2
+				}
+			}
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func UnmarshalNewTimeseriesGraph(v interface{}) (NewTimeseriesGraph, error) {
+	var it NewTimeseriesGraph
+	var asMap = v.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "description":
+			var err error
+			var ptr1 string
+			if v != nil {
+				ptr1, err = graphql.UnmarshalString(v)
+				it.Description = &ptr1
+			}
+
+			if err != nil {
+				return it, err
+			}
+		case "data":
+			var err error
+			var rawIf1 []interface{}
+			if v != nil {
+				if tmp1, ok := v.([]interface{}); ok {
+					rawIf1 = tmp1
+				} else {
+					rawIf1 = []interface{}{v}
+				}
+			}
+			it.Data = make([]*TimePointInput, len(rawIf1))
+			for idx1 := range rawIf1 {
+				var ptr2 TimePointInput
+				if rawIf1[idx1] != nil {
+					ptr2, err = UnmarshalTimePointInput(rawIf1[idx1])
+					it.Data[idx1] = &ptr2
+				}
+			}
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func UnmarshalPairPointInput(v interface{}) (PairPointInput, error) {
+	var it PairPointInput
+	var asMap = v.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "x":
+			var err error
+			it.X, err = graphql.UnmarshalFloat(v)
+			if err != nil {
+				return it, err
+			}
+		case "y":
+			var err error
+			it.Y, err = graphql.UnmarshalFloat(v)
+			if err != nil {
+				return it, err
+			}
+		case "meta":
+			var err error
+			var rawIf1 []interface{}
+			if v != nil {
+				if tmp1, ok := v.([]interface{}); ok {
+					rawIf1 = tmp1
+				} else {
+					rawIf1 = []interface{}{v}
+				}
+			}
+			it.Meta = make([]*MetaInput, len(rawIf1))
+			for idx1 := range rawIf1 {
+				var ptr2 MetaInput
+				if rawIf1[idx1] != nil {
+					ptr2, err = UnmarshalMetaInput(rawIf1[idx1])
+					it.Meta[idx1] = &ptr2
+				}
+			}
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func UnmarshalPiePointInput(v interface{}) (PiePointInput, error) {
+	var it PiePointInput
+	var asMap = v.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "percent":
+			var err error
+			it.Percent, err = graphql.UnmarshalFloat(v)
+			if err != nil {
+				return it, err
+			}
+		case "meta":
+			var err error
+			var rawIf1 []interface{}
+			if v != nil {
+				if tmp1, ok := v.([]interface{}); ok {
+					rawIf1 = tmp1
+				} else {
+					rawIf1 = []interface{}{v}
+				}
+			}
+			it.Meta = make([]*MetaInput, len(rawIf1))
+			for idx1 := range rawIf1 {
+				var ptr2 MetaInput
+				if rawIf1[idx1] != nil {
+					ptr2, err = UnmarshalMetaInput(rawIf1[idx1])
+					it.Meta[idx1] = &ptr2
+				}
+			}
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func UnmarshalTimePointInput(v interface{}) (TimePointInput, error) {
+	var it TimePointInput
+	var asMap = v.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "timestamp":
+			var err error
+			it.Timestamp, err = graphql.UnmarshalTime(v)
+			if err != nil {
+				return it, err
+			}
+		case "value":
+			var err error
+			it.Value, err = graphql.UnmarshalFloat(v)
+			if err != nil {
+				return it, err
+			}
+		case "meta":
+			var err error
+			var rawIf1 []interface{}
+			if v != nil {
+				if tmp1, ok := v.([]interface{}); ok {
+					rawIf1 = tmp1
+				} else {
+					rawIf1 = []interface{}{v}
+				}
+			}
+			it.Meta = make([]*MetaInput, len(rawIf1))
+			for idx1 := range rawIf1 {
+				var ptr2 MetaInput
+				if rawIf1[idx1] != nil {
+					ptr2, err = UnmarshalMetaInput(rawIf1[idx1])
+					it.Meta[idx1] = &ptr2
+				}
+			}
 			if err != nil {
 				return it, err
 			}
@@ -2224,11 +3294,11 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var parsedSchema = gqlparser.MustLoadSchema(
-	&ast.Source{Name: "schema.graphql", Input: `type Todo {
+	&ast.Source{Name: "schema.graphql", Input: `type Graph {
   id: ID!
-  text: String!
-  done: Boolean!
-  user: User!
+  description: String!
+  creator: User
+  data: [DataPoint]!
 }
 
 type User {
@@ -2236,17 +3306,81 @@ type User {
   name: String!
 }
 
-type Query {
-  todos: [Todo!]!
+type Meta {
+  key: String!
+  value: String!
 }
 
-input NewTodo {
-  text: String!
-  userId: String!
+union DataPoint = PairPoint | PiePoint | TimePoint
+
+type PairPoint {
+  x: Float!
+  y: Float!
+  meta: [Meta]!
 }
+
+type PiePoint {
+  percent: Float!
+  meta: [Meta]!
+}
+
+type TimePoint {
+  timestamp: Time!
+  value: Float!
+  meta: [Meta]!
+}
+
+"""
+Time is a datetime scalar with timezone.
+"""
+scalar Time
+
+type Query {
+  getGraph(id: ID!): Graph
+}
+
+input MetaInput {
+  key: String!
+  value: String!
+}
+
+input NewLineGraph {
+  description: String
+  data: [PairPointInput]!
+}
+
+input PairPointInput {
+  x: Float!
+  y: Float!
+  meta: [MetaInput]!
+}
+
+input NewPieGraph {
+  description: String
+  data: [PiePointInput]!
+}
+
+input PiePointInput {
+  percent: Float!
+  meta: [MetaInput]!
+}
+
+input NewTimeseriesGraph {
+  description: String
+  data: [TimePointInput]!
+}
+
+input TimePointInput {
+  timestamp: Time!
+  value: Float!
+  meta: [MetaInput]!
+}
+
 
 type Mutation {
-  createTodo(input: NewTodo!): Todo!
+  createLineGraph(input: NewLineGraph!): Graph!
+  createPieGraph(input: NewPieGraph!): Graph!
+  createTimeseriesGraph(input: NewTimeseriesGraph!): Graph!
 }
 `},
 )

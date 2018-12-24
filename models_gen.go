@@ -2,16 +2,84 @@
 
 package charts
 
-type NewTodo struct {
-	Text   string `json:"text"`
-	UserID string `json:"userId"`
+import (
+	"time"
+)
+
+type DataPoint interface {
+	IsDataPoint()
 }
 
-type Todo struct {
-	ID   string `json:"id"`
-	Text string `json:"text"`
-	Done bool   `json:"done"`
-	User User   `json:"user"`
+type Graph struct {
+	ID          string       `json:"id"`
+	Description string       `json:"description"`
+	Creator     *User        `json:"creator"`
+	Data        []*DataPoint `json:"data"`
+}
+
+type Meta struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type MetaInput struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type NewLineGraph struct {
+	Description *string           `json:"description"`
+	Data        []*PairPointInput `json:"data"`
+}
+
+type NewPieGraph struct {
+	Description *string          `json:"description"`
+	Data        []*PiePointInput `json:"data"`
+}
+
+type NewTimeseriesGraph struct {
+	Description *string           `json:"description"`
+	Data        []*TimePointInput `json:"data"`
+}
+
+type PairPoint struct {
+	X    float64 `json:"x"`
+	Y    float64 `json:"y"`
+	Meta []*Meta `json:"meta"`
+}
+
+func (PairPoint) IsDataPoint() {}
+
+type PairPointInput struct {
+	X    float64      `json:"x"`
+	Y    float64      `json:"y"`
+	Meta []*MetaInput `json:"meta"`
+}
+
+type PiePoint struct {
+	Percent float64 `json:"percent"`
+	Meta    []*Meta `json:"meta"`
+}
+
+func (PiePoint) IsDataPoint() {}
+
+type PiePointInput struct {
+	Percent float64      `json:"percent"`
+	Meta    []*MetaInput `json:"meta"`
+}
+
+type TimePoint struct {
+	Timestamp time.Time `json:"timestamp"`
+	Value     float64   `json:"value"`
+	Meta      []*Meta   `json:"meta"`
+}
+
+func (TimePoint) IsDataPoint() {}
+
+type TimePointInput struct {
+	Timestamp time.Time    `json:"timestamp"`
+	Value     float64      `json:"value"`
+	Meta      []*MetaInput `json:"meta"`
 }
 
 type User struct {
