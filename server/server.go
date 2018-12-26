@@ -42,6 +42,8 @@ var (
 		Funcs:                     []template.FuncMap{{}},
 	})
 
+	dbURL = os.Getenv("DATABASE_URL")
+
 	log = &logrus.Logger{
 		Out:       os.Stderr,
 		Formatter: new(logrus.JSONFormatter),
@@ -51,6 +53,15 @@ var (
 )
 
 func main() {
+	if dbURL == "" {
+		log.Fatalf("DATABASE_URL is empty!")
+	}
+
+	_, err := charts.InitDB(dbURL)
+	if err != nil {
+		log.Fatalf("Init DB: %+v", err)
+	}
+
 	port := "8080"
 	if fromEnv := os.Getenv("PORT"); fromEnv != "" {
 		port = fromEnv
