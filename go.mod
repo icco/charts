@@ -5,6 +5,7 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.8.0
 	github.com/99designs/gqlgen v0.7.1
 	github.com/99designs/gqlgen-contrib v0.0.0-20181214005309-52113d2e3f08
+	github.com/GuiaBolso/darwin v0.0.0-20170210191649-86919dfcf808
 	github.com/agnivade/levenshtein v1.0.1 // indirect
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883 // indirect
 	github.com/aws/aws-sdk-go v1.16.11 // indirect
@@ -16,6 +17,8 @@ require (
 	github.com/gorilla/websocket v1.4.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.0 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
+	github.com/lib/pq v1.0.0
+	github.com/opencensus-integrations/ocsql v0.1.2
 	github.com/sergi/go-diff v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.2.0
 	github.com/vektah/gqlparser v1.0.0

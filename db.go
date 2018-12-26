@@ -1,4 +1,4 @@
-package graphql
+package charts
 
 import (
 	"context"

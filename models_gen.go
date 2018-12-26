@@ -10,13 +10,6 @@ type DataPoint interface {
 	IsDataPoint()
 }
 
-type Graph struct {
-	ID          string       `json:"id"`
-	Description string       `json:"description"`
-	Creator     *User        `json:"creator"`
-	Data        []*DataPoint `json:"data"`
-}
-
 type Meta struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`

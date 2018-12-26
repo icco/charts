@@ -38,5 +38,5 @@ func (r *mutationResolver) CreateTimeseriesGraph(ctx context.Context, input NewT
 type queryResolver struct{ *Resolver }
 
 func (r *queryResolver) GetGraph(ctx context.Context, id string) (*Graph, error) {
-	panic("not implemented")
+	return GetGraph(ctx, id)
 }
