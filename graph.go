@@ -49,8 +49,8 @@ func parseJSON(data json.RawMessage) []*DataPoint {
 	}
 
 	ret := make([]*DataPoint, len(rawData))
-	for i, r := range rawData {
-	}
+	//for i, r := range rawData {
+	//}
 
 	return ret
 }
