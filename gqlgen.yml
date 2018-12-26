@@ -1,7 +1,5 @@
-# .gqlgen.yml example
-#
 # Refer to https://gqlgen.com/config/
-# for detailed .gqlgen.yml documentation.
+# for detailed gqlgen.yml documentation.
 
 schema:
 - schema.graphql
@@ -12,3 +10,8 @@ model:
 resolver:
   filename: resolver.go
   type: Resolver
+models:
+  Graph:
+    model: github.com/icco/charts.Graph
+  User:
+    model: github.com/icco/charts.User

@@ -28,7 +28,7 @@ func GetGraph(ctx context.Context, id string) (*Graph, error) {
 		return nil, fmt.Errorf("Error running get query: %+v", err)
 	}
 
-	err, user := GetUser(ctx, userID)
+	user, err := GetUser(ctx, userID)
 	if err != nil {
 		return nil, err
 	}

@@ -74,8 +74,3 @@ type TimePointInput struct {
 	Value     float64      `json:"value"`
 	Meta      []*MetaInput `json:"meta"`
 }
-
-type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}

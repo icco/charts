@@ -8,6 +8,8 @@ type Graph {
 type User {
   id: ID!
   name: String!
+	role: String!
+	apikey: String!
 }
 
 type Meta {
