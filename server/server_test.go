@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/icco/charts"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,6 +19,10 @@ func doRequest(handler http.Handler, method string, target string, body string) 
 }
 
 func TestGraphQLPOST(t *testing.T) {
+	_, err := charts.InitDB(dbURL)
+	if err != nil {
+		t.Errorf("Init DB: %+v", err)
+	}
 	h := buildGraphQLHandler()
 
 	t.Run("get a graph", func(t *testing.T) {
