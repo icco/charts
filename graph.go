@@ -25,14 +25,19 @@ func GetGraph(ctx context.Context, id string) (*Graph, error) {
 	var graph Graph
 	var data json.RawMessage
 	var userID string
+	var graphType string
+
 	row := db.QueryRowContext(ctx, "SELECT id, type, description, data, creator_id FROM graphs WHERE id = $1", id)
-	err := row.Scan(&graph.ID, &graph.Type, &graph.Description, &data, &userID)
+	err := row.Scan(&graph.ID, &graphType, &graph.Description, &data, &userID)
+
 	switch {
 	case err == sql.ErrNoRows:
 		return nil, fmt.Errorf("No graph with that id.")
 	case err != nil:
 		return nil, fmt.Errorf("Error running get query: %+v", err)
 	}
+
+	graph.Type = GraphType(graphType)
 
 	user, err := GetUser(ctx, userID)
 	if err != nil {
@@ -106,14 +111,15 @@ func (g *Graph) Save(ctx context.Context) error {
 	if _, err := db.ExecContext(
 		ctx,
 		`
-INSERT INTO graphs(id, description, data, created_at, modified_at)
-VALUES ($1, $2, $3, $4, $4)
+INSERT INTO graphs(id, description, type, data, created_at, modified_at)
+VALUES ($1, $2, $3, $4, $5, $5)
 ON CONFLICT (id) DO UPDATE
-SET (description, data, modified_at) = ($2, $3, $4)
+SET (description, type, data, modified_at) = ($2, $3, $4, $5)
 WHERE graphs.id = $1;
 `,
 		g.ID,
 		g.Description,
+		g.Type,
 		j,
 		time.Now()); err != nil {
 		return err
@@ -124,6 +130,7 @@ WHERE graphs.id = $1;
 
 func CreateLineGraph(ctx context.Context, input NewLineGraph) (Graph, error) {
 	g := Graph{}
+	g.Type = GraphTypeLine
 
 	if input.Description != nil {
 		g.Description = *input.Description
