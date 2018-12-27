@@ -1,24 +1,101 @@
-type Todo {
+type Graph {
   id: ID!
-  text: String!
-  done: Boolean!
-  user: User!
+  description: String!
+  creator: User
+  data: [DataPoint!]!
+  type: GraphType!
+  created: Time!
+  modified: Time!
+}
+
+enum GraphType {
+  LINE
+  PIE
+  TIMESERIES
 }
 
 type User {
   id: ID!
   name: String!
+  role: String!
+  apikey: String!
+  created: Time!
+  modified: Time!
 }
+
+type Meta {
+  key: String!
+  value: String!
+}
+
+union DataPoint = PairPoint | PiePoint | TimePoint
+
+type PairPoint {
+  x: Float!
+  y: Float!
+  meta: [Meta]!
+}
+
+type PiePoint {
+  percent: Float!
+  meta: [Meta]!
+}
+
+type TimePoint {
+  timestamp: Time!
+  value: Float!
+  meta: [Meta]!
+}
+
+"""
+Time is a datetime scalar with timezone.
+"""
+scalar Time
 
 type Query {
-  todos: [Todo!]!
+  getGraph(id: ID!): Graph
 }
 
-input NewTodo {
-  text: String!
-  userId: String!
+input MetaInput {
+  key: String!
+  value: String!
 }
+
+input NewLineGraph {
+  description: String
+  data: [PairPointInput]!
+}
+
+input PairPointInput {
+  x: Float!
+  y: Float!
+  meta: [MetaInput]
+}
+
+input NewPieGraph {
+  description: String
+  data: [PiePointInput]!
+}
+
+input PiePointInput {
+  percent: Float!
+  meta: [MetaInput]
+}
+
+input NewTimeseriesGraph {
+  description: String
+  data: [TimePointInput]!
+}
+
+input TimePointInput {
+  timestamp: Time!
+  value: Float!
+  meta: [MetaInput]
+}
+
 
 type Mutation {
-  createTodo(input: NewTodo!): Todo!
+  createLineGraph(input: NewLineGraph!): Graph!
+  createPieGraph(input: NewPieGraph!): Graph!
+  createTimeseriesGraph(input: NewTimeseriesGraph!): Graph!
 }

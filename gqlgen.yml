@@ -1,0 +1,17 @@
+# Refer to https://gqlgen.com/config/
+# for detailed gqlgen.yml documentation.
+
+schema:
+- schema.graphql
+exec:
+  filename: generated.go
+model:
+  filename: models_gen.go
+resolver:
+  filename: resolver.go
+  type: Resolver
+models:
+  Graph:
+    model: github.com/icco/charts.Graph
+  User:
+    model: github.com/icco/charts.User
