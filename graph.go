@@ -38,6 +38,7 @@ func GetGraph(ctx context.Context, id string) (*Graph, error) {
 
 	graph.Type = GraphType(graphType)
 
+	// TODO: Add users back in.
 	//user, err := GetUser(ctx, userID)
 	//if err != nil {
 	//	return nil, err
