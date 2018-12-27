@@ -18,14 +18,14 @@ var (
 	migrations = []darwin.Migration{
 		{
 			Version:     1,
-			Description: "Creating table posts",
+			Description: "Creating table graphs",
 			Script: `
       CREATE TABLE graphs (
-        id serial primary key,
+        id text primary key,
         description text,
         creator_id text,
         data jsonb,
-        type string,
+        type text,
         created_at timestamp with time zone,
         modified_at timestamp with time zone
       );
@@ -35,6 +35,7 @@ var (
 			Version:     2,
 			Description: "Create users",
 			Script: `
+      CREATE EXTENSION pgcrypto;
       CREATE TABLE users(
         id text primary key,
         role text,

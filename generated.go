@@ -3641,7 +3641,7 @@ input NewLineGraph {
 input PairPointInput {
   x: Float!
   y: Float!
-  meta: [MetaInput]!
+  meta: [MetaInput]
 }
 
 input NewPieGraph {
@@ -3651,7 +3651,7 @@ input NewPieGraph {
 
 input PiePointInput {
   percent: Float!
-  meta: [MetaInput]!
+  meta: [MetaInput]
 }
 
 input NewTimeseriesGraph {
@@ -3662,7 +3662,7 @@ input NewTimeseriesGraph {
 input TimePointInput {
   timestamp: Time!
   value: Float!
-  meta: [MetaInput]!
+  meta: [MetaInput]
 }
 
 

@@ -98,6 +98,11 @@ func (g *Graph) Save(ctx context.Context) error {
 		g.ID = uid.String()
 	}
 
+	j, err := json.Marshal(g.Data)
+	if err != nil {
+		return err
+	}
+
 	if _, err := db.ExecContext(
 		ctx,
 		`
@@ -105,11 +110,11 @@ INSERT INTO graphs(id, description, data, created_at, modified_at)
 VALUES ($1, $2, $3, $4, $4)
 ON CONFLICT (id) DO UPDATE
 SET (description, data, modified_at) = ($2, $3, $4)
-WHERE posts.id = $1;
+WHERE graphs.id = $1;
 `,
 		g.ID,
 		g.Description,
-		g.Data,
+		j,
 		time.Now()); err != nil {
 		return err
 	}
