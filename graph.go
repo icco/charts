@@ -5,10 +5,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log" // TODO: Better log choce
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/wcharczuk/go-chart" //exposes "chart"
 )
 
 type Graph struct {
@@ -126,6 +129,55 @@ WHERE graphs.id = $1;
 	}
 
 	return nil
+}
+
+func (g *Graph) Render(ctx context.Context, w io.Writer) error {
+	if len(g.Data) > 0 {
+		if _, ok := g.Data[0].(PairPoint); ok {
+			d := make([]PairPoint, len(g.Data))
+			for i, r := range g.Data {
+				d[i] = r.(PairPoint)
+			}
+			graph := generateLineGraph(d)
+			return graph.Render(chart.PNG, w)
+		}
+	}
+
+	return fmt.Errorf("Don't know how to render this graph type.")
+}
+
+func generateLineGraph(data []PairPoint) chart.Chart {
+	// Sort the X or things look weird
+	sort.Slice(data, func(i, j int) bool {
+		return data[i].X > data[j].X
+	})
+
+	xs := make([]float64, len(data))
+	ys := make([]float64, len(data))
+
+	for i, c := range data {
+		xs[i] = c.X
+		ys[i] = c.Y
+	}
+
+	return chart.Chart{
+		XAxis: chart.XAxis{
+			Name:      "X",
+			NameStyle: chart.StyleShow(),
+			Style:     chart.StyleShow(),
+		},
+		YAxis: chart.YAxis{
+			Name:      "Y",
+			NameStyle: chart.StyleShow(),
+			Style:     chart.StyleShow(),
+		},
+		Series: []chart.Series{
+			chart.ContinuousSeries{
+				XValues: xs,
+				YValues: ys,
+			},
+		},
+	}
 }
 
 func CreateLineGraph(ctx context.Context, input NewLineGraph) (Graph, error) {

@@ -195,7 +195,7 @@ func renderGraphHandler(w http.ResponseWriter, r *http.Request) {
 
 	// render graph
 	w.Header().Set("Content-Type", "image/png")
-	err := g.Render(r.Context(), w)
+	err = g.Render(r.Context(), w)
 	if err != nil {
 		log.WithError(err).Error("render graph")
 		http.Error(w, "Error rendering graph.", http.StatusInternalServerError)
