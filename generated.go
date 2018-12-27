@@ -594,7 +594,7 @@ func (ec *executionContext) _Graph_data(ctx context.Context, field graphql.Colle
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*DataPoint)
+	res := resTmp.([]DataPoint)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 
@@ -610,7 +610,7 @@ func (ec *executionContext) _Graph_data(ctx context.Context, field graphql.Colle
 		idx1 := idx1
 		rctx := &graphql.ResolverContext{
 			Index:  &idx1,
-			Result: res[idx1],
+			Result: &res[idx1],
 		}
 		ctx := graphql.WithResolverContext(ctx, rctx)
 		f := func(idx1 int) {
@@ -619,11 +619,7 @@ func (ec *executionContext) _Graph_data(ctx context.Context, field graphql.Colle
 			}
 			arr1[idx1] = func() graphql.Marshaler {
 
-				if res[idx1] == nil {
-					return graphql.Null
-				}
-
-				return ec._DataPoint(ctx, field.Selections, res[idx1])
+				return ec._DataPoint(ctx, field.Selections, &res[idx1])
 			}()
 		}
 		if isLen1 {
@@ -3418,7 +3414,7 @@ var parsedSchema = gqlparser.MustLoadSchema(
   id: ID!
   description: String!
   creator: User
-  data: [DataPoint]!
+  data: [DataPoint!]!
   type: GraphType!
 }
 
