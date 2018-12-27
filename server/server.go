@@ -139,35 +139,8 @@ func main() {
 		}).Handler)
 
 		r.Handle("/", handler.Playground("graphql", "/graphql"))
-		r.Handle("/graphql", handler.GraphQL(
-			charts.NewExecutableSchema(charts.New()),
-			handler.RecoverFunc(func(ctx context.Context, intErr interface{}) error {
-				err, ok := intErr.(error)
-				if ok {
-					log.WithError(err).Error("Error seen during graphql")
-				}
-				return errors.New("Fatal message seen when processing request")
-			}),
-			handler.CacheSize(512),
-			handler.RequestMiddleware(func(ctx context.Context, next func(ctx context.Context) []byte) []byte {
-				rctx := graphql.GetRequestContext(ctx)
-
-				// We do this because RequestContext has fields that can't be easily
-				// serialized in json, and we don't care about them.
-				subsetContext := map[string]interface{}{
-					"query":      rctx.RawQuery,
-					"variables":  rctx.Variables,
-					"extensions": rctx.Extensions,
-				}
-
-				log.WithField("gql", subsetContext).Printf("request gql")
-
-				return next(ctx)
-			}),
-			handler.Tracer(gqlopencensus.New()),
-		))
+		r.Handle("/graphql", buildGraphQLHandler())
 	})
-
 	h := &ochttp.Handler{
 		Handler:     r,
 		Propagation: &propagation.HTTPFormat{},
@@ -177,6 +150,36 @@ func main() {
 	}
 
 	log.Fatal(http.ListenAndServe(":"+port, h))
+}
+
+func buildGraphQLHandler() http.HandlerFunc {
+	return handler.GraphQL(
+		charts.NewExecutableSchema(charts.New()),
+		handler.RecoverFunc(func(ctx context.Context, intErr interface{}) error {
+			err, ok := intErr.(error)
+			if ok {
+				log.WithError(err).Error("Error seen during graphql")
+			}
+			return errors.New("Fatal message seen when processing request")
+		}),
+		handler.CacheSize(512),
+		handler.RequestMiddleware(func(ctx context.Context, next func(ctx context.Context) []byte) []byte {
+			rctx := graphql.GetRequestContext(ctx)
+
+			// We do this because RequestContext has fields that can't be easily
+			// serialized in json, and we don't care about them.
+			subsetContext := map[string]interface{}{
+				"query":      rctx.RawQuery,
+				"variables":  rctx.Variables,
+				"extensions": rctx.Extensions,
+			}
+
+			log.WithField("gql", subsetContext).Printf("request gql")
+
+			return next(ctx)
+		}),
+		handler.Tracer(gqlopencensus.New()),
+	)
 }
 
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
