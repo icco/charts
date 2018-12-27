@@ -13,7 +13,7 @@ env:
     - DATABASE_URL="postgres://postgres@localhost/travis_ci_test?sslmode=disable"
 script:
   - go vet ./...
-  - go build ./server -o /tmp/server.out
+  - go build ./server -o ./server.out
   - go test -v ./...
 notifications:
   email:
