@@ -46,6 +46,7 @@ type ComplexityRoot struct {
 		Description func(childComplexity int) int
 		Creator     func(childComplexity int) int
 		Data        func(childComplexity int) int
+		Type        func(childComplexity int) int
 	}
 
 	Meta struct {
@@ -81,8 +82,10 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		Id   func(childComplexity int) int
-		Name func(childComplexity int) int
+		Id     func(childComplexity int) int
+		Name   func(childComplexity int) int
+		Role   func(childComplexity int) int
+		Apikey func(childComplexity int) int
 	}
 }
 
@@ -241,6 +244,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Graph.Data(childComplexity), true
 
+	case "Graph.type":
+		if e.complexity.Graph.Type == nil {
+			break
+		}
+
+		return e.complexity.Graph.Type(childComplexity), true
+
 	case "Meta.key":
 		if e.complexity.Meta.Key == nil {
 			break
@@ -373,6 +383,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Name(childComplexity), true
 
+	case "User.role":
+		if e.complexity.User.Role == nil {
+			break
+		}
+
+		return e.complexity.User.Role(childComplexity), true
+
+	case "User.apikey":
+		if e.complexity.User.Apikey == nil {
+			break
+		}
+
+		return e.complexity.User.Apikey(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -447,6 +471,11 @@ func (ec *executionContext) _Graph(ctx context.Context, sel ast.SelectionSet, ob
 			out.Values[i] = ec._Graph_creator(ctx, field, obj)
 		case "data":
 			out.Values[i] = ec._Graph_data(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "type":
+			out.Values[i] = ec._Graph_type(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalid = true
 			}
@@ -565,7 +594,7 @@ func (ec *executionContext) _Graph_data(ctx context.Context, field graphql.Colle
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*DataPoint)
+	res := resTmp.([]DataPoint)
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 
@@ -581,7 +610,7 @@ func (ec *executionContext) _Graph_data(ctx context.Context, field graphql.Colle
 		idx1 := idx1
 		rctx := &graphql.ResolverContext{
 			Index:  &idx1,
-			Result: res[idx1],
+			Result: &res[idx1],
 		}
 		ctx := graphql.WithResolverContext(ctx, rctx)
 		f := func(idx1 int) {
@@ -590,11 +619,7 @@ func (ec *executionContext) _Graph_data(ctx context.Context, field graphql.Colle
 			}
 			arr1[idx1] = func() graphql.Marshaler {
 
-				if res[idx1] == nil {
-					return graphql.Null
-				}
-
-				return ec._DataPoint(ctx, field.Selections, res[idx1])
+				return ec._DataPoint(ctx, field.Selections, &res[idx1])
 			}()
 		}
 		if isLen1 {
@@ -606,6 +631,33 @@ func (ec *executionContext) _Graph_data(ctx context.Context, field graphql.Colle
 	}
 	wg.Wait()
 	return arr1
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _Graph_type(ctx context.Context, field graphql.CollectedField, obj *Graph) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "Graph",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(GraphType)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return res
 }
 
 var metaImplementors = []string{"Meta"}
@@ -1448,6 +1500,16 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				invalid = true
 			}
+		case "role":
+			out.Values[i] = ec._User_role(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "apikey":
+			out.Values[i] = ec._User_apikey(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -1500,6 +1562,60 @@ func (ec *executionContext) _User_name(ctx context.Context, field graphql.Collec
 	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Name, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalString(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _User_role(ctx context.Context, field graphql.CollectedField, obj *User) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "User",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Role, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalString(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _User_apikey(ctx context.Context, field graphql.CollectedField, obj *User) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "User",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.APIKey, nil
 	})
 	if resTmp == nil {
 		if !ec.HasError(rctx) {
@@ -3298,12 +3414,21 @@ var parsedSchema = gqlparser.MustLoadSchema(
   id: ID!
   description: String!
   creator: User
-  data: [DataPoint]!
+  data: [DataPoint!]!
+  type: GraphType!
+}
+
+enum GraphType {
+  LINE
+  PIE
+  TIMESERIES
 }
 
 type User {
   id: ID!
   name: String!
+	role: String!
+	apikey: String!
 }
 
 type Meta {

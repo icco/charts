@@ -25,6 +25,7 @@ var (
         description text,
         creator_id text,
         data jsonb,
+        type string,
         created_at timestamp with time zone,
         modified_at timestamp with time zone
       );

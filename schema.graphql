@@ -2,7 +2,14 @@ type Graph {
   id: ID!
   description: String!
   creator: User
-  data: [DataPoint]!
+  data: [DataPoint!]!
+  type: GraphType!
+}
+
+enum GraphType {
+  LINE
+  PIE
+  TIMESERIES
 }
 
 type User {

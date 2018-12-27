@@ -3,6 +3,9 @@
 package charts
 
 import (
+	"fmt"
+	"io"
+	"strconv"
 	"time"
 )
 
@@ -73,4 +76,41 @@ type TimePointInput struct {
 	Timestamp time.Time    `json:"timestamp"`
 	Value     float64      `json:"value"`
 	Meta      []*MetaInput `json:"meta"`
+}
+
+type GraphType string
+
+const (
+	GraphTypeLine       GraphType = "LINE"
+	GraphTypePie        GraphType = "PIE"
+	GraphTypeTimeseries GraphType = "TIMESERIES"
+)
+
+func (e GraphType) IsValid() bool {
+	switch e {
+	case GraphTypeLine, GraphTypePie, GraphTypeTimeseries:
+		return true
+	}
+	return false
+}
+
+func (e GraphType) String() string {
+	return string(e)
+}
+
+func (e *GraphType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = GraphType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid GraphType", str)
+	}
+	return nil
+}
+
+func (e GraphType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }
