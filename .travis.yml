@@ -8,12 +8,13 @@ services:
 before_script:
   - psql -c 'create database travis_ci_test;' -U postgres
 env:
-  - GO111MODULE=on
-  - DATABASE_URL="postgres://postgres@localhost/travis_ci_test?sslmode=disable"
+  global:
+    - GO111MODULE=on
+    - DATABASE_URL="postgres://postgres@localhost/travis_ci_test?sslmode=disable"
 script:
   - go vet ./...
-  - go build .
-  - go test -v
+  - go build ./server -o /tmp/server.out
+  - go test -v ./...
 notifications:
   email:
     on_success: change
