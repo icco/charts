@@ -52,4 +52,8 @@ func TestGraphQLPOST(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.Code)
 		assert.Equal(t, response, resp.Body.String())
 	})
+
+	// TODO: Test create a pie graph
+	// TODO: Test create a timeseries graph
+	// TODO: Test working get a graph
 }
