@@ -36,7 +36,7 @@ func TestGraphQLPOST(t *testing.T) {
 
 		resp := doRequest(h, "POST", "/graphql", query)
 		assert.Equal(t, http.StatusOK, resp.Code)
-		assert.Equal(t, response, resp.Body.String())
+		assert.JSONEq(t, response, resp.Body.String())
 	})
 
 	t.Run("get a missing graph", func(t *testing.T) {
@@ -50,7 +50,7 @@ func TestGraphQLPOST(t *testing.T) {
 
 		resp := doRequest(h, "POST", "/graphql", query)
 		assert.Equal(t, http.StatusOK, resp.Code)
-		assert.Equal(t, response, resp.Body.String())
+		assert.JSONEq(t, response, resp.Body.String())
 	})
 
 	// TODO: Test create a pie graph
