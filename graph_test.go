@@ -16,6 +16,9 @@ func TestJSONParsing(t *testing.T) {
 		testStruct{GraphTypeTimeseries, "[]"},
 		testStruct{GraphTypePie, "[]"},
 		testStruct{GraphTypeLine, "[]"},
+		testStruct{GraphTypeTimeseries, `[{"timestamp": "2012-04-23T18:25:43.511Z", "value": 56.2}]`},
+		testStruct{GraphTypePie, `[{"percent": 50}]`},
+		testStruct{GraphTypeLine, `[{"x": 1, "y": 1}]`},
 	} {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			var g Graph
