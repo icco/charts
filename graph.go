@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log" //TODO: Better log choce
+	"log" // TODO: Better log choce
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type Graph struct {
@@ -14,6 +17,8 @@ type Graph struct {
 	Creator     *User       `json:"creator"`
 	Data        []DataPoint `json:"data"`
 	Type        GraphType   `json:"type"`
+	Created     time.Time   `json:"created"`
+	Modified    time.Time   `json:"modified"`
 }
 
 func GetGraph(ctx context.Context, id string) (*Graph, error) {
@@ -82,4 +87,55 @@ func (g *Graph) parseJSONToData(data json.RawMessage) error {
 
 	g.Data = ret
 	return nil
+}
+
+func (g *Graph) Save(ctx context.Context) error {
+	if g.ID == "" {
+		uid := uuid.NewRandom()
+		g.ID = uid.String()
+	}
+
+	if _, err := db.ExecContext(
+		ctx,
+		`
+INSERT INTO graphs(id, description, data, created_at, modified_at)
+VALUES ($1, $2, $3, $4, $4)
+ON CONFLICT (id) DO UPDATE
+SET (description, data, modified_at) = ($2, $3, $4)
+WHERE posts.id = $1;
+`,
+		g.ID,
+		g.Description,
+		g.Data,
+		time.Now()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CreateLineGraph(ctx context.Context, input NewLineGraph) (Graph, error) {
+	g := Graph{}
+	g.Description = input.Description
+
+	g.Data = make([]PairPoint, len(input.Data))
+	for i, r := range input.Data {
+		p := PairPoint{X: r.X, Y: r.Y}
+		p.Meta = make([]Meta, len(r.Meta))
+		for i, m := range r.Meta {
+			p.Meta[i] = &Meta{Key: m.Key, Value: m.Value}
+		}
+		g.Data[i] = p
+	}
+
+	err := g.Save(ctx)
+	return g, err
+}
+
+func CreatePieGraph(ctx context.Context, input NewPieGraph) (Graph, error) {
+	return nil, fmt.Errorf("Not implemented yet.")
+}
+
+func CreateTimeseriesGraph(ctx context.Context, input NewTimeseriesGraph) (Graph, error) {
+	return nil, fmt.Errorf("Not implemented yet.")
 }

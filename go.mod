@@ -13,6 +13,7 @@ require (
 	github.com/go-chi/cors v1.0.0
 	github.com/go-ini/ini v1.40.0 // indirect
 	github.com/golang/mock v1.2.0 // indirect
+	github.com/google/uuid v1.1.0
 	github.com/googleapis/gax-go v2.0.2+incompatible // indirect
 	github.com/gorilla/websocket v1.4.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.6.3 // indirect
@@ -20,9 +21,11 @@ require (
 	github.com/lib/pq v1.0.0
 	github.com/opencensus-integrations/ocsql v0.1.2
 	github.com/openzipkin/zipkin-go v0.1.3 // indirect
+	github.com/pkg/errors v0.8.0 // indirect
 	github.com/prometheus/client_golang v0.9.2 // indirect
 	github.com/prometheus/common v0.0.0-20181218105931-67670fe90761 // indirect
 	github.com/sirupsen/logrus v1.2.0
+	github.com/urfave/cli v1.20.0 // indirect
 	github.com/vektah/gqlparser v1.0.0
 	go.opencensus.io v0.18.0
 	golang.org/x/crypto v0.0.0-20181203042331-505ab145d0a9 // indirect

@@ -26,13 +26,15 @@ func New() Config {
 type mutationResolver struct{ *Resolver }
 
 func (r *mutationResolver) CreateLineGraph(ctx context.Context, input NewLineGraph) (Graph, error) {
-	panic("not implemented")
+	return CreateLineGraph(ctx, input)
 }
+
 func (r *mutationResolver) CreatePieGraph(ctx context.Context, input NewPieGraph) (Graph, error) {
-	panic("not implemented")
+	return CreatePieGraph(ctx, input)
 }
+
 func (r *mutationResolver) CreateTimeseriesGraph(ctx context.Context, input NewTimeseriesGraph) (Graph, error) {
-	panic("not implemented")
+	return CreateTimeseriesGraph(ctx, input)
 }
 
 type queryResolver struct{ *Resolver }

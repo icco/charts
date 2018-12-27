@@ -4,6 +4,8 @@ type Graph {
   creator: User
   data: [DataPoint!]!
   type: GraphType!
+  created: Time!
+  modified: Time!
 }
 
 enum GraphType {
@@ -15,8 +17,10 @@ enum GraphType {
 type User {
   id: ID!
   name: String!
-	role: String!
-	apikey: String!
+  role: String!
+  apikey: String!
+  created: Time!
+  modified: Time!
 }
 
 type Meta {
