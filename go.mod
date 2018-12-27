@@ -25,6 +25,7 @@ require (
 	github.com/prometheus/client_golang v0.9.2 // indirect
 	github.com/prometheus/common v0.0.0-20181218105931-67670fe90761 // indirect
 	github.com/sirupsen/logrus v1.2.0
+	github.com/stretchr/testify v1.2.2
 	github.com/urfave/cli v1.20.0 // indirect
 	github.com/vektah/gqlparser v1.0.0
 	go.opencensus.io v0.18.0

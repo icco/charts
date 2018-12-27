@@ -3,12 +3,24 @@ language: go
 sudo: false
 go:
   - 1.11.x
+  - master
+dist: trusty
+sudo: false
+addons:
+  postgresql: 9.6
+services:
+  - postgresql
+before_script:
+  - psql -c 'create database travis_ci_test;' -U postgres
+install: true
 env:
-  - GO111MODULE=on
+  global:
+    - GO111MODULE=on
+    - DATABASE_URL="postgres://postgres@localhost/travis_ci_test?sslmode=disable"
 script:
   - go vet ./...
-  - go build .
-  - go test -v
+  - go build -o ./server.out ./server
+  - go test -v ./...
 notifications:
   email:
     on_success: change
