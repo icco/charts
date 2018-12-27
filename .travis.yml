@@ -1,6 +1,8 @@
 # https://docs.travis-ci.com/user/languages/go
 language: go
 sudo: false
+addons:
+  postgresql: 9.6
 go:
   - 1.11.x
 services:
