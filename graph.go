@@ -24,11 +24,10 @@ type Graph struct {
 func GetGraph(ctx context.Context, id string) (*Graph, error) {
 	var graph Graph
 	var data json.RawMessage
-	var userID string
 	var graphType string
 
-	row := db.QueryRowContext(ctx, "SELECT id, type, description, data, creator_id FROM graphs WHERE id = $1", id)
-	err := row.Scan(&graph.ID, &graphType, &graph.Description, &data, &userID)
+	row := db.QueryRowContext(ctx, "SELECT id, type, description, data FROM graphs WHERE id = $1", id)
+	err := row.Scan(&graph.ID, &graphType, &graph.Description, &data)
 
 	switch {
 	case err == sql.ErrNoRows:
@@ -39,11 +38,11 @@ func GetGraph(ctx context.Context, id string) (*Graph, error) {
 
 	graph.Type = GraphType(graphType)
 
-	user, err := GetUser(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-	graph.Creator = user
+	//user, err := GetUser(ctx, userID)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//graph.Creator = user
 
 	err = graph.parseJSONToData(data)
 	if err != nil {
