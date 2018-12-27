@@ -50,6 +50,7 @@ func (g *Graph) parseJSONToData(data json.RawMessage) error {
 	err := json.Unmarshal(data, &rawData)
 	if err != nil {
 		log.Printf("Problem parsing json: %+v", err)
+		return err
 	}
 
 	ret := make([]DataPoint, len(rawData))
