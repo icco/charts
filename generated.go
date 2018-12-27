@@ -47,6 +47,8 @@ type ComplexityRoot struct {
 		Creator     func(childComplexity int) int
 		Data        func(childComplexity int) int
 		Type        func(childComplexity int) int
+		Created     func(childComplexity int) int
+		Modified    func(childComplexity int) int
 	}
 
 	Meta struct {
@@ -82,10 +84,12 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		Id     func(childComplexity int) int
-		Name   func(childComplexity int) int
-		Role   func(childComplexity int) int
-		Apikey func(childComplexity int) int
+		Id       func(childComplexity int) int
+		Name     func(childComplexity int) int
+		Role     func(childComplexity int) int
+		Apikey   func(childComplexity int) int
+		Created  func(childComplexity int) int
+		Modified func(childComplexity int) int
 	}
 }
 
@@ -251,6 +255,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Graph.Type(childComplexity), true
 
+	case "Graph.created":
+		if e.complexity.Graph.Created == nil {
+			break
+		}
+
+		return e.complexity.Graph.Created(childComplexity), true
+
+	case "Graph.modified":
+		if e.complexity.Graph.Modified == nil {
+			break
+		}
+
+		return e.complexity.Graph.Modified(childComplexity), true
+
 	case "Meta.key":
 		if e.complexity.Meta.Key == nil {
 			break
@@ -397,6 +415,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Apikey(childComplexity), true
 
+	case "User.created":
+		if e.complexity.User.Created == nil {
+			break
+		}
+
+		return e.complexity.User.Created(childComplexity), true
+
+	case "User.modified":
+		if e.complexity.User.Modified == nil {
+			break
+		}
+
+		return e.complexity.User.Modified(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -476,6 +508,16 @@ func (ec *executionContext) _Graph(ctx context.Context, sel ast.SelectionSet, ob
 			}
 		case "type":
 			out.Values[i] = ec._Graph_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "created":
+			out.Values[i] = ec._Graph_created(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "modified":
+			out.Values[i] = ec._Graph_modified(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalid = true
 			}
@@ -658,6 +700,60 @@ func (ec *executionContext) _Graph_type(ctx context.Context, field graphql.Colle
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return res
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _Graph_created(ctx context.Context, field graphql.CollectedField, obj *Graph) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "Graph",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Created, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalTime(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _Graph_modified(ctx context.Context, field graphql.CollectedField, obj *Graph) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "Graph",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Modified, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalTime(res)
 }
 
 var metaImplementors = []string{"Meta"}
@@ -1510,6 +1606,16 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				invalid = true
 			}
+		case "created":
+			out.Values[i] = ec._User_created(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
+		case "modified":
+			out.Values[i] = ec._User_modified(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -1627,6 +1733,60 @@ func (ec *executionContext) _User_apikey(ctx context.Context, field graphql.Coll
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return graphql.MarshalString(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _User_created(ctx context.Context, field graphql.CollectedField, obj *User) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "User",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Created, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalTime(res)
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _User_modified(ctx context.Context, field graphql.CollectedField, obj *User) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "User",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Modified, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalTime(res)
 }
 
 var __DirectiveImplementors = []string{"__Directive"}
@@ -3416,6 +3576,8 @@ var parsedSchema = gqlparser.MustLoadSchema(
   creator: User
   data: [DataPoint!]!
   type: GraphType!
+  created: Time!
+  modified: Time!
 }
 
 enum GraphType {
@@ -3427,8 +3589,10 @@ enum GraphType {
 type User {
   id: ID!
   name: String!
-	role: String!
-	apikey: String!
+  role: String!
+  apikey: String!
+  created: Time!
+  modified: Time!
 }
 
 type Meta {

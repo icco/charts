@@ -91,7 +91,10 @@ func (g *Graph) parseJSONToData(data json.RawMessage) error {
 
 func (g *Graph) Save(ctx context.Context) error {
 	if g.ID == "" {
-		uid := uuid.NewRandom()
+		uid, err := uuid.NewRandom()
+		if err != nil {
+			return err
+		}
 		g.ID = uid.String()
 	}
 
@@ -116,12 +119,15 @@ WHERE posts.id = $1;
 
 func CreateLineGraph(ctx context.Context, input NewLineGraph) (Graph, error) {
 	g := Graph{}
-	g.Description = input.Description
 
-	g.Data = make([]PairPoint, len(input.Data))
+	if input.Description != nil {
+		g.Description = *input.Description
+	}
+
+	g.Data = make([]DataPoint, len(input.Data))
 	for i, r := range input.Data {
 		p := PairPoint{X: r.X, Y: r.Y}
-		p.Meta = make([]Meta, len(r.Meta))
+		p.Meta = make([]*Meta, len(r.Meta))
 		for i, m := range r.Meta {
 			p.Meta[i] = &Meta{Key: m.Key, Value: m.Value}
 		}
@@ -133,9 +139,9 @@ func CreateLineGraph(ctx context.Context, input NewLineGraph) (Graph, error) {
 }
 
 func CreatePieGraph(ctx context.Context, input NewPieGraph) (Graph, error) {
-	return nil, fmt.Errorf("Not implemented yet.")
+	return Graph{}, fmt.Errorf("Not implemented yet.")
 }
 
 func CreateTimeseriesGraph(ctx context.Context, input NewTimeseriesGraph) (Graph, error) {
-	return nil, fmt.Errorf("Not implemented yet.")
+	return Graph{}, fmt.Errorf("Not implemented yet.")
 }
