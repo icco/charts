@@ -1,0 +1,14 @@
+# https://docs.travis-ci.com/user/languages/go
+language: go
+sudo: false
+go:
+  - "1.11"
+env:
+  - GO111MODULE=on
+script:
+  - go vet ./...
+  - go build .
+notifications:
+  email:
+    on_success: change
+    on_failure: change
