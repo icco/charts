@@ -140,6 +140,7 @@ func main() {
 
 		r.Handle("/", handler.Playground("graphql", "/graphql"))
 		r.Handle("/graphql", buildGraphQLHandler())
+		r.Get("/graph/{graphID}", renderGraphHandler)
 	})
 	h := &ochttp.Handler{
 		Handler:     r,
@@ -180,6 +181,26 @@ func buildGraphQLHandler() http.HandlerFunc {
 		}),
 		handler.Tracer(gqlopencensus.New()),
 	)
+}
+
+func renderGraphHandler(w http.ResponseWriter, r *http.Request) {
+	// get graph
+	gid := chi.URLParam(r, "graphID")
+	g, err := charts.GetGraph(r.Context(), gid)
+	if err != nil {
+		log.WithError(err).Error("get graph")
+		http.Error(w, "Error getting graph.", http.StatusNotFound)
+		return
+	}
+
+	// render graph
+	w.Header().Set("Content-Type", "image/png")
+	err := g.Render(r.Context(), w)
+	if err != nil {
+		log.WithError(err).Error("render graph")
+		http.Error(w, "Error rendering graph.", http.StatusInternalServerError)
+		return
+	}
 }
 
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
