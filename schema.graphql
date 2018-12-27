@@ -3,6 +3,13 @@ type Graph {
   description: String!
   creator: User
   data: [DataPoint]!
+  type: GraphType!
+}
+
+enum GraphType {
+  LINE
+  PIE
+  TIMESERIES
 }
 
 type User {

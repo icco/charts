@@ -46,6 +46,7 @@ type ComplexityRoot struct {
 		Description func(childComplexity int) int
 		Creator     func(childComplexity int) int
 		Data        func(childComplexity int) int
+		Type        func(childComplexity int) int
 	}
 
 	Meta struct {
@@ -242,6 +243,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Graph.Data(childComplexity), true
+
+	case "Graph.type":
+		if e.complexity.Graph.Type == nil {
+			break
+		}
+
+		return e.complexity.Graph.Type(childComplexity), true
 
 	case "Meta.key":
 		if e.complexity.Meta.Key == nil {
@@ -466,6 +474,11 @@ func (ec *executionContext) _Graph(ctx context.Context, sel ast.SelectionSet, ob
 			if out.Values[i] == graphql.Null {
 				invalid = true
 			}
+		case "type":
+			out.Values[i] = ec._Graph_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalid = true
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -622,6 +635,33 @@ func (ec *executionContext) _Graph_data(ctx context.Context, field graphql.Colle
 	}
 	wg.Wait()
 	return arr1
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _Graph_type(ctx context.Context, field graphql.CollectedField, obj *Graph) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "Graph",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(GraphType)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return res
 }
 
 var metaImplementors = []string{"Meta"}
@@ -3379,6 +3419,13 @@ var parsedSchema = gqlparser.MustLoadSchema(
   description: String!
   creator: User
   data: [DataPoint]!
+  type: GraphType!
+}
+
+enum GraphType {
+  LINE
+  PIE
+  TIMESERIES
 }
 
 type User {

@@ -13,6 +13,7 @@ type Graph struct {
 	Description string       `json:"description"`
 	Creator     *User        `json:"creator"`
 	Data        []*DataPoint `json:"data"`
+	Type        GraphType    `json:"type"`
 }
 
 func GetGraph(ctx context.Context, id string) (*Graph, error) {
