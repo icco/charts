@@ -17,7 +17,6 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
 	"github.com/icco/charts"
-	"github.com/sirupsen/logrus"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
@@ -44,12 +43,10 @@ var (
 
 	dbURL = os.Getenv("DATABASE_URL")
 
-	log *logrus.Logger
+	log = charts.InitLogging()
 )
 
 func main() {
-	log = charts.InitLogging()
-
 	if dbURL == "" {
 		log.Fatalf("DATABASE_URL is empty!")
 	}
