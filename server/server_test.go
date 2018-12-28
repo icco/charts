@@ -53,7 +53,7 @@ func TestGraphQLPOST(t *testing.T) {
     `
 
 		response := `
-    {"errors":[{"message":"No graph with that id.","path":["getGraph"]}],"data":{"getGraph":null}}
+    {"errors":[{"message":"no graph with that id","path":["getGraph"]}],"data":{"getGraph":null}}
     `
 
 		resp := doRequest(h, "POST", "/graphql", query)
