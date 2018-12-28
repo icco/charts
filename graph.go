@@ -262,5 +262,23 @@ func CreatePieGraph(ctx context.Context, input NewPieGraph) (Graph, error) {
 }
 
 func CreateTimeseriesGraph(ctx context.Context, input NewTimeseriesGraph) (Graph, error) {
-	return Graph{}, fmt.Errorf("not implemented yet")
+	g := Graph{}
+	g.Type = GraphTypeTimeseries
+
+	if input.Description != nil {
+		g.Description = *input.Description
+	}
+
+	g.Data = make([]DataPoint, len(input.Data))
+	for i, r := range input.Data {
+		p := TimePoint{Timestamp: r.Timestamp, Value: r.Value}
+		p.Meta = make([]*Meta, len(r.Meta))
+		for i, m := range r.Meta {
+			p.Meta[i] = &Meta{Key: m.Key, Value: m.Value}
+		}
+		g.Data[i] = p
+	}
+
+	err := g.Save(ctx)
+	return g, err
 }
