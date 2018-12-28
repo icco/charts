@@ -47,6 +47,7 @@ type ComplexityRoot struct {
 		Creator     func(childComplexity int) int
 		Data        func(childComplexity int) int
 		Type        func(childComplexity int) int
+		Url         func(childComplexity int) int
 		Created     func(childComplexity int) int
 		Modified    func(childComplexity int) int
 	}
@@ -254,6 +255,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Graph.Type(childComplexity), true
+
+	case "Graph.url":
+		if e.complexity.Graph.Url == nil {
+			break
+		}
+
+		return e.complexity.Graph.Url(childComplexity), true
 
 	case "Graph.created":
 		if e.complexity.Graph.Created == nil {
@@ -481,6 +489,7 @@ var graphImplementors = []string{"Graph"}
 func (ec *executionContext) _Graph(ctx context.Context, sel ast.SelectionSet, obj *Graph) graphql.Marshaler {
 	fields := graphql.CollectFields(ctx, sel, graphImplementors)
 
+	var wg sync.WaitGroup
 	out := graphql.NewOrderedMap(len(fields))
 	invalid := false
 	for i, field := range fields {
@@ -511,6 +520,15 @@ func (ec *executionContext) _Graph(ctx context.Context, sel ast.SelectionSet, ob
 			if out.Values[i] == graphql.Null {
 				invalid = true
 			}
+		case "url":
+			wg.Add(1)
+			go func(i int, field graphql.CollectedField) {
+				out.Values[i] = ec._Graph_url(ctx, field, obj)
+				if out.Values[i] == graphql.Null {
+					invalid = true
+				}
+				wg.Done()
+			}(i, field)
 		case "created":
 			out.Values[i] = ec._Graph_created(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -525,7 +543,7 @@ func (ec *executionContext) _Graph(ctx context.Context, sel ast.SelectionSet, ob
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
-
+	wg.Wait()
 	if invalid {
 		return graphql.Null
 	}
@@ -700,6 +718,33 @@ func (ec *executionContext) _Graph_type(ctx context.Context, field graphql.Colle
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return res
+}
+
+// nolint: vetshadow
+func (ec *executionContext) _Graph_url(ctx context.Context, field graphql.CollectedField, obj *Graph) graphql.Marshaler {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
+	rctx := &graphql.ResolverContext{
+		Object: "Graph",
+		Args:   nil,
+		Field:  field,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.URL(ctx), nil
+	})
+	if resTmp == nil {
+		if !ec.HasError(rctx) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return graphql.MarshalString(res)
 }
 
 // nolint: vetshadow
@@ -3576,6 +3621,7 @@ var parsedSchema = gqlparser.MustLoadSchema(
   creator: User
   data: [DataPoint!]!
   type: GraphType!
+  url: String!
   created: Time!
   modified: Time!
 }

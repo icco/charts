@@ -24,10 +24,10 @@ type Graph struct {
 	Modified    time.Time   `json:"modified"`
 }
 
-func (g *Graph) URL() string {
+func (g *Graph) URL(ctx context.Context) string {
 	// TODO: Make this dependent on where we are running.
 	host := "https://chartopia.app"
-	return fmt.SPrintf("%s/graph/%s", host, g.ID)
+	return fmt.Sprintf("%s/graph/%s", host, g.ID)
 }
 
 func GetGraph(ctx context.Context, id string) (*Graph, error) {
