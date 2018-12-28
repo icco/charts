@@ -23,6 +23,7 @@ type Graph struct {
 	Modified    time.Time   `json:"modified"`
 }
 
+// URL returns a url someone could view this page at.
 func (g *Graph) URL(ctx context.Context) string {
 	// TODO: Make this dependent on where we are running.
 	host := "https://chartopia.app"
@@ -39,9 +40,9 @@ func GetGraph(ctx context.Context, id string) (*Graph, error) {
 
 	switch {
 	case err == sql.ErrNoRows:
-		return nil, fmt.Errorf("No graph with that id.")
+		return nil, fmt.Errorf("no graph with that id")
 	case err != nil:
-		return nil, fmt.Errorf("Error running get query: %+v", err)
+		return nil, fmt.Errorf("error running get query: %+v", err)
 	}
 
 	graph.Type = GraphType(graphType)
@@ -67,7 +68,7 @@ func (g *Graph) parseJSONToData(data json.RawMessage) error {
 
 	err := json.Unmarshal(data, &rawData)
 	if err != nil {
-		log.WithError(err).Error("Problem parsing json")
+		log.WithError(err).Error("problem parsing json")
 		return err
 	}
 
@@ -136,6 +137,7 @@ WHERE graphs.id = $1;
 	return nil
 }
 
+// Render writes a PNG of the graph to an io.Writer.
 func (g *Graph) Render(ctx context.Context, w io.Writer) error {
 	if len(g.Data) > 0 {
 		if _, ok := g.Data[0].(PairPoint); ok {
@@ -148,7 +150,7 @@ func (g *Graph) Render(ctx context.Context, w io.Writer) error {
 		}
 	}
 
-	return fmt.Errorf("Don't know how to render this graph type.")
+	return fmt.Errorf("don't know how to render this graph type")
 }
 
 func generateLineGraph(data []PairPoint) chart.Chart {
@@ -208,9 +210,9 @@ func CreateLineGraph(ctx context.Context, input NewLineGraph) (Graph, error) {
 }
 
 func CreatePieGraph(ctx context.Context, input NewPieGraph) (Graph, error) {
-	return Graph{}, fmt.Errorf("Not implemented yet.")
+	return Graph{}, fmt.Errorf("not implemented yet")
 }
 
 func CreateTimeseriesGraph(ctx context.Context, input NewTimeseriesGraph) (Graph, error) {
-	return Graph{}, fmt.Errorf("Not implemented yet.")
+	return Graph{}, fmt.Errorf("not implemented yet")
 }

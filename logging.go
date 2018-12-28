@@ -13,6 +13,7 @@ import (
 
 var log = logrus.New()
 
+// InitLogging initializes a logger to send things to stackdriver.
 func InitLogging() *logrus.Logger {
 	log.Formatter = stackdriver.NewFormatter(
 		stackdriver.WithService("charts"),
@@ -24,7 +25,8 @@ func InitLogging() *logrus.Logger {
 	return log
 }
 
-// New creates a new stats middleware
+// LoggingMiddleware is a middleware for writing request logs in a stuctured
+// format to stackdriver.
 func LoggingMiddleware() func(http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
