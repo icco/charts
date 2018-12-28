@@ -100,6 +100,8 @@ github.com/hellofresh/logging-go v0.3.0 h1:ZB5dLqPJoMJGjRwuteiqeG+2aB2nEvdzxmB1E
 github.com/hellofresh/logging-go v0.3.0/go.mod h1:gwpkafA8SxN1O16aSWH4DMCp0+48miJHeeyaI5bl6HY=
 github.com/icco/logrus-stackdriver-formatter v0.1.1-0.20181228223047-1700450f401d h1:RPdXmbIQJpjEY4uo2iDhTbXAGqEBqUhBLmIygxQQS+U=
 github.com/icco/logrus-stackdriver-formatter v0.1.1-0.20181228223047-1700450f401d/go.mod h1:+1Yv20/o7IukDUDZDkRC+9A3QJhYF2O2iXT25NfKd9I=
+github.com/icco/logrus-stackdriver-formatter v0.1.1-0.20181228232123-a1ea5a778488 h1:FT28bscbAbsCrAae+VrHolabmKWUGzTQUYdyRueLxBc=
+github.com/icco/logrus-stackdriver-formatter v0.1.1-0.20181228232123-a1ea5a778488/go.mod h1:9o92ge+KSFpkiGGU7yxkAkd8TN6g3NW1eznlUPURHu4=
 github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8 h1:12VvqtR6Aowv3l/EQUlocDHW2Cp4G9WJVH7uyH8QFJE=
 github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
 github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af h1:pmfjZENx5imkbgOkpRUYLnmbU7UEFbjtDA2hxJ1ichM=

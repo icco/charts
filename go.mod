@@ -13,7 +13,6 @@ require (
 	github.com/go-chi/chi v3.3.3+incompatible
 	github.com/go-chi/cors v1.0.0
 	github.com/go-ini/ini v1.40.0 // indirect
-	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/mock v1.2.0 // indirect
 	github.com/google/uuid v1.1.0
@@ -22,7 +21,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.6.3 // indirect
 	github.com/hashicorp/golang-lru v0.5.0 // indirect
 	github.com/hellofresh/logging-go v0.3.0
-	github.com/icco/logrus-stackdriver-formatter v0.1.1-0.20181228223047-1700450f401d
+	github.com/icco/logrus-stackdriver-formatter v0.1.1-0.20181228232123-a1ea5a778488
 	github.com/lib/pq v1.0.0
 	github.com/opencensus-integrations/ocsql v0.1.2
 	github.com/openzipkin/zipkin-go v0.1.3 // indirect
