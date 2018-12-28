@@ -139,21 +139,34 @@ WHERE graphs.id = $1;
 
 // Render writes a PNG of the graph to an io.Writer.
 func (g *Graph) Render(ctx context.Context, w io.Writer) error {
+	renderer := chart.PNG
 	if len(g.Data) > 0 {
-		if _, ok := g.Data[0].(PairPoint); ok {
+		switch g.Type {
+		case GraphTypeLine:
 			d := make([]PairPoint, len(g.Data))
 			for i, r := range g.Data {
 				d[i] = r.(PairPoint)
 			}
-			graph := generateLineGraph(d)
-			return graph.Render(chart.PNG, w)
+			return generateLineGraph(d, renderer, w)
+		case GraphTypePie:
+			d := make([]PiePoint, len(g.Data))
+			for i, r := range g.Data {
+				d[i] = r.(PiePoint)
+			}
+			return generatePieGraph(d, renderer, w)
+		case GraphTypeTimeseries:
+			d := make([]TimePoint, len(g.Data))
+			for i, r := range g.Data {
+				d[i] = r.(TimePoint)
+			}
+			return generateTimeGraph(d, renderer, w)
 		}
 	}
 
 	return fmt.Errorf("don't know how to render this graph type")
 }
 
-func generateLineGraph(data []PairPoint) chart.Chart {
+func generateLineGraph(data []PairPoint, renderer chart.RendererProvider, w io.Writer) error {
 	// Sort the X or things look weird
 	sort.Slice(data, func(i, j int) bool {
 		return data[i].X > data[j].X
@@ -169,14 +182,10 @@ func generateLineGraph(data []PairPoint) chart.Chart {
 
 	return chart.Chart{
 		XAxis: chart.XAxis{
-			Name:      "X",
-			NameStyle: chart.StyleShow(),
-			Style:     chart.StyleShow(),
+			Style: chart.StyleShow(),
 		},
 		YAxis: chart.YAxis{
-			Name:      "Y",
-			NameStyle: chart.StyleShow(),
-			Style:     chart.StyleShow(),
+			Style: chart.StyleShow(),
 		},
 		Series: []chart.Series{
 			chart.ContinuousSeries{
@@ -184,7 +193,46 @@ func generateLineGraph(data []PairPoint) chart.Chart {
 				YValues: ys,
 			},
 		},
+	}.Render(renderer, w)
+}
+
+func generateTimeGraph(data []TimePoint, renderer chart.RendererProvider, w io.Writer) error {
+	// Sort the X or things look weird
+	sort.Slice(data, func(i, j int) bool {
+		return data[i].Timestamp.After(data[j].Timestamp)
+	})
+
+	xs := make([]time.Time, len(data))
+	ys := make([]float64, len(data))
+
+	for i, c := range data {
+		xs[i] = c.Timestamp
+		ys[i] = c.Value
 	}
+
+	return chart.Chart{
+		XAxis: chart.XAxis{
+			Style: chart.StyleShow(),
+		},
+		YAxis: chart.YAxis{
+			Style: chart.StyleShow(),
+		},
+		Series: []chart.Series{
+			chart.TimeSeries{
+				XValues: xs,
+				YValues: ys,
+			},
+		},
+	}.Render(renderer, w)
+}
+
+func generatePieGraph(data []PiePoint, renderer chart.RendererProvider, w io.Writer) error {
+	vals := []chart.Value{}
+	for _, r := range data {
+		vals = append(vals, chart.Value{Value: r.Percent})
+	}
+
+	return chart.PieChart{Values: vals}.Render(renderer, w)
 }
 
 func CreateLineGraph(ctx context.Context, input NewLineGraph) (Graph, error) {
