@@ -5,9 +5,9 @@ import (
 	"net/url"
 	"time"
 
-	stackdriver "github.com/TV4/logrus-stackdriver-formatter"
 	"github.com/felixge/httpsnoop"
 	"github.com/hellofresh/logging-go/context"
+	stackdriver "github.com/icco/logrus-stackdriver-formatter"
 	"github.com/sirupsen/logrus"
 )
 
