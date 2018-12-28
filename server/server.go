@@ -44,15 +44,12 @@ var (
 
 	dbURL = os.Getenv("DATABASE_URL")
 
-	log = &logrus.Logger{
-		Out:       os.Stderr,
-		Formatter: new(logrus.JSONFormatter),
-		Hooks:     make(logrus.LevelHooks),
-		Level:     logrus.DebugLevel,
-	}
+	log *logrus.Logger
 )
 
 func main() {
+	log = charts.InitLogging()
+
 	if dbURL == "" {
 		log.Fatalf("DATABASE_URL is empty!")
 	}
@@ -66,7 +63,7 @@ func main() {
 	if fromEnv := os.Getenv("PORT"); fromEnv != "" {
 		port = fromEnv
 	}
-	log.Printf("Starting up on http://localhost:%s", port)
+	log.Debugf("Starting up on http://localhost:%s", port)
 
 	if os.Getenv("ENABLE_STACKDRIVER") != "" {
 		sd, err := stackdriver.NewExporter(stackdriver.Options{
@@ -95,7 +92,7 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
-	r.Use(NewStructuredLogger(log))
+	r.Use(charts.LoggingMiddleware())
 
 	r.Use(cors.New(cors.Options{
 		AllowCredentials:   true,
@@ -175,7 +172,7 @@ func buildGraphQLHandler() http.HandlerFunc {
 				"extensions": rctx.Extensions,
 			}
 
-			log.WithField("gql", subsetContext).Printf("request gql")
+			log.WithField("gql", subsetContext).Debugf("request gql")
 
 			return next(ctx)
 		}),

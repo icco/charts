@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log" // TODO: Better log choce
 	"sort"
 	"time"
 
@@ -68,7 +67,7 @@ func (g *Graph) parseJSONToData(data json.RawMessage) error {
 
 	err := json.Unmarshal(data, &rawData)
 	if err != nil {
-		log.Printf("Problem parsing json: %+v", err)
+		log.WithError(err).Error("Problem parsing json")
 		return err
 	}
 
