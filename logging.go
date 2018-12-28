@@ -31,7 +31,6 @@ func LoggingMiddleware() func(http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			r = r.WithContext(context.New(r.Context()))
-			log.WithFields(logrus.Fields{"method": r.Method, "path": r.URL.Path}).Debug("Started request")
 
 			// reverse proxy replaces original request with target request, so keep original one
 			originalURL := &url.URL{}
@@ -57,7 +56,7 @@ func LoggingMiddleware() func(http.Handler) http.Handler {
 				fields["upstream-request"] = r.URL.RequestURI()
 			}
 
-			log.WithFields(fields).Info("Completed handling request")
+			log.WithFields(logrus.Fields{"httpRequest": fields}).Info("Completed request")
 		})
 	}
 }
