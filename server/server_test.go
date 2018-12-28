@@ -19,6 +19,7 @@ func doRequest(handler http.Handler, method string, target string, body string) 
 }
 
 func TestGraphQLPOST(t *testing.T) {
+	InitLogging()
 	_, err := charts.InitDB(dbURL)
 	if err != nil {
 		t.Errorf("Init DB: %+v", err)

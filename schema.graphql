@@ -4,6 +4,7 @@ type Graph {
   creator: User
   data: [DataPoint!]!
   type: GraphType!
+  url: String!
   created: Time!
   modified: Time!
 }
