@@ -32,31 +32,22 @@ func LoggingMiddleware() func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			r = r.WithContext(context.New(r.Context()))
 
-			// reverse proxy replaces original request with target request, so keep original one
-			originalURL := &url.URL{}
-			*originalURL = *r.URL
-
-			fields := logrus.Fields{
-				"method":      r.Method,
-				"host":        r.Host,
-				"request":     r.RequestURI,
-				"remote-addr": r.RemoteAddr,
-				"referer":     r.Referer(),
-				"user-agent":  r.UserAgent(),
+			// https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest
+			request := map[string]interface{}{
+				"requestMethod": r.Method,
+				"host":          r.Host,
+				"requestUrl":    r.RequestURI,
+				"remoteIp":      r.RemoteAddr,
+				"referer":       r.Referer(),
+				"userAgent":     r.UserAgent(),
 			}
 
 			m := httpsnoop.CaptureMetrics(handler, w, r)
 
-			fields["code"] = m.Code
-			fields["duration"] = int(m.Duration / time.Millisecond)
-			fields["duration-fmt"] = m.Duration.String()
+			fields["status"] = m.Code
+			fields["latency"] = int(m.Duration / time.Millisecond)
 
-			if originalURL.String() != r.URL.String() {
-				fields["upstream-host"] = r.URL.Host
-				fields["upstream-request"] = r.URL.RequestURI()
-			}
-
-			log.WithFields(logrus.Fields{"httpRequest": fields}).Info("Completed request")
+			log.WithFields(logrus.Fields{"httpRequest": request}).Info("Completed request")
 		})
 	}
 }
