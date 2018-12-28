@@ -258,7 +258,25 @@ func CreateLineGraph(ctx context.Context, input NewLineGraph) (Graph, error) {
 }
 
 func CreatePieGraph(ctx context.Context, input NewPieGraph) (Graph, error) {
-	return Graph{}, fmt.Errorf("not implemented yet")
+	g := Graph{}
+	g.Type = GraphTypePie
+
+	if input.Description != nil {
+		g.Description = *input.Description
+	}
+
+	g.Data = make([]DataPoint, len(input.Data))
+	for i, r := range input.Data {
+		p := PiePoint{Percent: r.Percent}
+		p.Meta = make([]*Meta, len(r.Meta))
+		for i, m := range r.Meta {
+			p.Meta[i] = &Meta{Key: m.Key, Value: m.Value}
+		}
+		g.Data[i] = p
+	}
+
+	err := g.Save(ctx)
+	return g, err
 }
 
 func CreateTimeseriesGraph(ctx context.Context, input NewTimeseriesGraph) (Graph, error) {
