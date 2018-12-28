@@ -3,6 +3,7 @@ package charts
 import (
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/felixge/httpsnoop"
@@ -17,6 +18,7 @@ var log = logrus.New()
 func InitLogging() *logrus.Logger {
 	log.Formatter = stackdriver.NewFormatter()
 	log.Level = logrus.DebugLevel
+	log.SetOutput(os.Stdout)
 
 	log.Info("Logger successfully initialised!")
 
