@@ -1,9 +1,10 @@
 package charts
 
 import (
+	"fmt"
 	"net/http"
 	"os"
-	"time"
+	"strconv"
 
 	"github.com/felixge/httpsnoop"
 	"github.com/hellofresh/logging-go/context"
@@ -32,19 +33,19 @@ func LoggingMiddleware() func(http.Handler) http.Handler {
 			r = r.WithContext(context.New(r.Context()))
 
 			// https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest
-			request := map[string]interface{}{
-				"requestMethod": r.Method,
-				"host":          r.Host,
-				"requestUrl":    r.RequestURI,
-				"remoteIp":      r.RemoteAddr,
-				"referer":       r.Referer(),
-				"userAgent":     r.UserAgent(),
+			// https://github.com/icco/logrus-stackdriver-formatter/blob/sd-v2/formatter.go#L53
+			request := &stackdriver.HttpRequest{
+				RequestMethod: r.Method,
+				RequestUrl:    r.RequestURI,
+				RemoteIp:      r.RemoteAddr,
+				Referer:       r.Referer(),
+				UserAgent:     r.UserAgent(),
 			}
 
 			m := httpsnoop.CaptureMetrics(handler, w, r)
 
-			request["status"] = m.Code
-			request["latency"] = int(m.Duration / time.Millisecond)
+			request.Status = strconv.Itoa(m.Code)
+			request.Latency = fmt.Sprintf("%.9fs", m.Duration.Seconds())
 
 			log.WithFields(logrus.Fields{"httpRequest": request}).Info("Completed request")
 		})
