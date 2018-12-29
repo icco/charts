@@ -21,7 +21,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.6.3 // indirect
 	github.com/hashicorp/golang-lru v0.5.0 // indirect
 	github.com/hellofresh/logging-go v0.3.0
-	github.com/icco/logrus-stackdriver-formatter v0.1.1-0.20181228232123-a1ea5a778488
+	github.com/icco/logrus-stackdriver-formatter v0.1.1-0.20181229042811-69791ff2054a
 	github.com/lib/pq v1.0.0
 	github.com/opencensus-integrations/ocsql v0.1.2
 	github.com/openzipkin/zipkin-go v0.1.3 // indirect
@@ -40,7 +40,7 @@ require (
 	golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4 // indirect
 	golang.org/x/sys v0.0.0-20181228144115-9a3f9b0469bb // indirect
 	golang.org/x/tools v0.0.0-20181221235234-d00ac6d27372 // indirect
-	google.golang.org/api v0.0.0-20181221000618-65a46cafb132 // indirect
+	google.golang.org/api v0.0.0-20181229000844-f26a60c56f14 // indirect
 	google.golang.org/appengine v1.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20181221175505-bd9b4fb69e2f // indirect
 	google.golang.org/grpc v1.17.0 // indirect

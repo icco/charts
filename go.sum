@@ -102,6 +102,8 @@ github.com/icco/logrus-stackdriver-formatter v0.1.1-0.20181228223047-1700450f401
 github.com/icco/logrus-stackdriver-formatter v0.1.1-0.20181228223047-1700450f401d/go.mod h1:+1Yv20/o7IukDUDZDkRC+9A3QJhYF2O2iXT25NfKd9I=
 github.com/icco/logrus-stackdriver-formatter v0.1.1-0.20181228232123-a1ea5a778488 h1:FT28bscbAbsCrAae+VrHolabmKWUGzTQUYdyRueLxBc=
 github.com/icco/logrus-stackdriver-formatter v0.1.1-0.20181228232123-a1ea5a778488/go.mod h1:9o92ge+KSFpkiGGU7yxkAkd8TN6g3NW1eznlUPURHu4=
+github.com/icco/logrus-stackdriver-formatter v0.1.1-0.20181229042811-69791ff2054a h1:b8TeTo5Py1wubdctKByYxRK3LSWtA8jTh0inOIy1VsY=
+github.com/icco/logrus-stackdriver-formatter v0.1.1-0.20181229042811-69791ff2054a/go.mod h1:9o92ge+KSFpkiGGU7yxkAkd8TN6g3NW1eznlUPURHu4=
 github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8 h1:12VvqtR6Aowv3l/EQUlocDHW2Cp4G9WJVH7uyH8QFJE=
 github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
 github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af h1:pmfjZENx5imkbgOkpRUYLnmbU7UEFbjtDA2hxJ1ichM=
@@ -194,6 +196,8 @@ google.golang.org/api v0.0.0-20180910000450-7ca32eb868bf h1:rjxqQmxjyqerRKEj+tZW
 google.golang.org/api v0.0.0-20180910000450-7ca32eb868bf/go.mod h1:4mhQ8q/RsB7i+udVvVy5NUi08OU8ZlA0gRVgrF7VFY0=
 google.golang.org/api v0.0.0-20181221000618-65a46cafb132 h1:SLcC5l+3o5vwvXAbdm936WwLkHteUZpo1RULZD7YvQ4=
 google.golang.org/api v0.0.0-20181221000618-65a46cafb132/go.mod h1:4mhQ8q/RsB7i+udVvVy5NUi08OU8ZlA0gRVgrF7VFY0=
+google.golang.org/api v0.0.0-20181229000844-f26a60c56f14 h1:ATP5OSAvJIQ7cxB9BfsnylT+uFZ1FvJRW4NH1T2NKOU=
+google.golang.org/api v0.0.0-20181229000844-f26a60c56f14/go.mod h1:4mhQ8q/RsB7i+udVvVy5NUi08OU8ZlA0gRVgrF7VFY0=
 google.golang.org/appengine v1.0.0/go.mod h1:EbEs0AVv82hx2wNQdGPgUI5lhzA/G0D9YwlJXL52JkM=
 google.golang.org/appengine v1.1.0/go.mod h1:EbEs0AVv82hx2wNQdGPgUI5lhzA/G0D9YwlJXL52JkM=
 google.golang.org/appengine v1.4.0 h1:/wp5JvzpHIxhs/dumFmF7BXTf3Z+dd4uXta4kVyO508=
