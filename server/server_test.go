@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -18,12 +20,17 @@ func doRequest(handler http.Handler, method string, target string, body string) 
 	return w
 }
 
-func TestGraphQLPOST(t *testing.T) {
+func TestMain(m *testing.M) {
 	charts.InitLogging()
 	_, err := charts.InitDB(dbURL)
 	if err != nil {
-		t.Errorf("Init DB: %+v", err)
+		panic(fmt.Sprintf("Init DB: %+v", err))
 	}
+	code := m.Run()
+	os.Exit(code)
+}
+
+func TestGraphQLPOST(t *testing.T) {
 	h := buildGraphQLHandler()
 
 	t.Run("create a line graph", func(t *testing.T) {
@@ -46,7 +53,7 @@ func TestGraphQLPOST(t *testing.T) {
     `
 
 		response := `
-    {"errors":[{"message":"No graph with that id.","path":["getGraph"]}],"data":{"getGraph":null}}
+    {"errors":[{"message":"no graph with that id","path":["getGraph"]}],"data":{"getGraph":null}}
     `
 
 		resp := doRequest(h, "POST", "/graphql", query)
