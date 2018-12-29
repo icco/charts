@@ -40,14 +40,24 @@ func LoggingMiddleware() func(http.Handler) http.Handler {
 				RemoteIp:      r.RemoteAddr,
 				Referer:       r.Referer(),
 				UserAgent:     r.UserAgent(),
+				RequestSize:   strconv.FormatInt(r.ContentLength, 10),
 			}
 
 			m := httpsnoop.CaptureMetrics(handler, w, r)
 
 			request.Status = strconv.Itoa(m.Code)
 			request.Latency = fmt.Sprintf("%.9fs", m.Duration.Seconds())
+			request.ResponseSize = strconv.FormatInt(m.Written, 10)
 
-			log.WithFields(logrus.Fields{"httpRequest": request}).Info("Completed request")
+			fields := logrus.Fields{"httpRequest": request}
+
+			// No idea if this works
+			traceHeader := r.Header.Get("X-Cloud-Trace-Context")
+			if traceHeader != "" {
+				fields["trace"] = traceHeader
+			}
+
+			log.WithFields(fields).Info("Completed request")
 		})
 	}
 }
