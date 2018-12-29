@@ -2,7 +2,6 @@ package charts
 
 import (
 	"net/http"
-	"net/url"
 	"os"
 	"time"
 
@@ -44,8 +43,8 @@ func LoggingMiddleware() func(http.Handler) http.Handler {
 
 			m := httpsnoop.CaptureMetrics(handler, w, r)
 
-			fields["status"] = m.Code
-			fields["latency"] = int(m.Duration / time.Millisecond)
+			request["status"] = m.Code
+			request["latency"] = int(m.Duration / time.Millisecond)
 
 			log.WithFields(logrus.Fields{"httpRequest": request}).Info("Completed request")
 		})
