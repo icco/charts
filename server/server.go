@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"html/template"
 	"net/http"
 	"os"
@@ -138,6 +139,12 @@ func main() {
 				"count": strconv.FormatInt(charts.GraphCount(r.Context()), 10),
 			})
 		})
+
+		r.Get("/static/{filename}", func(w http.ResponseWriter, r *http.Request) {
+			filename := chi.URLParam(r, "filename")
+			http.ServeFile(w, r, fmt.Sprintf("./server/views/static/%s", filename))
+		})
+
 		r.Handle("/play", handler.Playground("graphql", "/graphql"))
 		r.Handle("/graphql", buildGraphQLHandler())
 		r.Get("/graph/{graphID}", renderGraphHandler)
