@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"strconv"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/monitoredresource"
@@ -132,7 +133,12 @@ func main() {
 			STSSeconds:           315360000,
 		}).Handler)
 
-		r.Handle("/", handler.Playground("graphql", "/graphql"))
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			Renderer.HTML(w, http.StatusOK, "index", map[string]string{
+				"count": strconv.FormatInt(charts.GraphCount(r.Context()), 10),
+			})
+		})
+		r.Handle("/play", handler.Playground("graphql", "/graphql"))
 		r.Handle("/graphql", buildGraphQLHandler())
 		r.Get("/graph/{graphID}", renderGraphHandler)
 	})

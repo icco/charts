@@ -62,6 +62,19 @@ func GetGraph(ctx context.Context, id string) (*Graph, error) {
 	return &graph, nil
 }
 
+// GraphCount returns the number of entries in the graph table. If there are
+// any errors, it logs them and returns 0.
+func GraphCount(ctx context.Context) int64 {
+	var cnt int64
+	err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM graphs").Scan(&cnt)
+	if err != nil {
+		log.WithError(err).Warn("Error getting count")
+		return 0
+	}
+
+	return cnt
+}
+
 func (g *Graph) parseJSONToData(data json.RawMessage) error {
 	var rawData []json.RawMessage
 	g.Data = []DataPoint{}
