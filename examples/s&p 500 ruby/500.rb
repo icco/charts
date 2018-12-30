@@ -6,15 +6,8 @@ require "json"
 require "chronic"
 
 module Chartopia
-  HTTP = GraphQL::Client::HTTP.new("https://chartopia.app/graphql") do
-    def headers(context)
-      # Optionally set any HTTP headers
-      { "User-Agent": "S&P 500 Example" }
-    end
-  end
-
+  HTTP = GraphQL::Client::HTTP.new("https://chartopia.app/graphql")
   Schema = GraphQL::Client.load_schema(HTTP)
-
   Client = GraphQL::Client.new(schema: Schema, execute: HTTP)
 end
 
