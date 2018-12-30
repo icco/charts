@@ -2,11 +2,27 @@
 <html>
   <head>
     <title>Chartopia!</title>
+    <link rel="stylesheet" href="https://unpkg.com/tachyons@4.10.0/css/tachyons.min.css"/>
   </head>
   <body>
-    <h1>Chartopia</h1>
-    <h2>A chart generation API</h2>
-
-    <p>Currently serving over {{ .count }} charts!</p>
+  <article class="athelas">
+  <div class="vh-100 dt w-100 tc bg-dark-gray white cover" style="background:url() no-repeat center;">
+  <div class="dtc v-mid">
+  <header class="white-70">
+  <h2 class="f6 fw1 ttu tracked mb2 lh-title">Chart generation API</h2>
+  </header>
+  <h1 class="f1 f-headline-l fw1 i white-60">Chartopia</h1>
+  <blockquote class="ph0 mh0 measure f4 lh-copy center">
+  <p class="fw1 white-70">
+  A GraphQL API where you send in data and get images. None of this silly Javascript nonsense.
+  </p>
+  <cite class="f6 ttu tracked fs-normal">Nat Welch</cite>
+  </blockquote>
+  </div>
+  </div>
+  <div class="center measure-wide f5 pv5 lh-copy ph2">
+  <p>Currently serving over {{ .count }} charts!</p>
+  </div>
+  </article>
   </body>
 </html>
