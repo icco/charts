@@ -142,7 +142,11 @@ func main() {
 
 		r.Get("/static/{filename}", func(w http.ResponseWriter, r *http.Request) {
 			filename := chi.URLParam(r, "filename")
-			http.ServeFile(w, r, fmt.Sprintf("./server/views/static/%s", filename))
+			base := "/go/src/github.com/icco/charts"
+			if isDev {
+				base = "."
+			}
+			http.ServeFile(w, r, fmt.Sprintf("%s/server/views/static/%s", base, filename))
 		})
 
 		r.Handle("/play", handler.Playground("graphql", "/graphql"))
