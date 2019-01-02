@@ -65,10 +65,12 @@ func main() {
 	log.Debugf("Starting up on http://localhost:%s", port)
 
 	if os.Getenv("ENABLE_STACKDRIVER") != "" {
+		labels := &stackdriver.Labels{}
+		labels.Set("app", "charts", "The name of the current app.")
 		sd, err := stackdriver.NewExporter(stackdriver.Options{
 			ProjectID:               "icco-cloud",
 			MonitoredResource:       monitoredresource.Autodetect(),
-			DefaultMonitoringLabels: &stackdriver.Labels{"app": "charts"},
+			DefaultMonitoringLabels: labels,
 			DefaultTraceAttributes:  map[string]interface{}{"/http/host": "chartopia.app"},
 		})
 
