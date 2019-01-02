@@ -67,9 +67,9 @@ func main() {
 	if os.Getenv("ENABLE_STACKDRIVER") != "" {
 		sd, err := stackdriver.NewExporter(stackdriver.Options{
 			ProjectID:               "icco-cloud",
-			MetricPrefix:            "charts",
 			MonitoredResource:       monitoredresource.Autodetect(),
-			DefaultMonitoringLabels: &stackdriver.Labels{},
+			DefaultMonitoringLabels: &stackdriver.Labels{"app": "charts"},
+			DefaultTraceAttributes:  map[string]interface{}{"/http/host": "chartopia.app"},
 		})
 
 		if err != nil {
