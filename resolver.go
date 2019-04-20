@@ -25,15 +25,15 @@ func New() Config {
 
 type mutationResolver struct{ *Resolver }
 
-func (r *mutationResolver) CreateLineGraph(ctx context.Context, input NewLineGraph) (Graph, error) {
+func (r *mutationResolver) CreateLineGraph(ctx context.Context, input NewLineGraph) (*Graph, error) {
 	return CreateLineGraph(ctx, input)
 }
 
-func (r *mutationResolver) CreatePieGraph(ctx context.Context, input NewPieGraph) (Graph, error) {
+func (r *mutationResolver) CreatePieGraph(ctx context.Context, input NewPieGraph) (*Graph, error) {
 	return CreatePieGraph(ctx, input)
 }
 
-func (r *mutationResolver) CreateTimeseriesGraph(ctx context.Context, input NewTimeseriesGraph) (Graph, error) {
+func (r *mutationResolver) CreateTimeseriesGraph(ctx context.Context, input NewTimeseriesGraph) (*Graph, error) {
 	return CreateTimeseriesGraph(ctx, input)
 }
 

@@ -248,8 +248,8 @@ func generatePieGraph(data []PiePoint, renderer chart.RendererProvider, w io.Wri
 	return chart.PieChart{Values: vals}.Render(renderer, w)
 }
 
-func CreateLineGraph(ctx context.Context, input NewLineGraph) (Graph, error) {
-	g := Graph{}
+func CreateLineGraph(ctx context.Context, input NewLineGraph) (*Graph, error) {
+	g := &Graph{}
 	g.Type = GraphTypeLine
 
 	if input.Description != nil {
@@ -270,8 +270,8 @@ func CreateLineGraph(ctx context.Context, input NewLineGraph) (Graph, error) {
 	return g, err
 }
 
-func CreatePieGraph(ctx context.Context, input NewPieGraph) (Graph, error) {
-	g := Graph{}
+func CreatePieGraph(ctx context.Context, input NewPieGraph) (*Graph, error) {
+	g := &Graph{}
 	g.Type = GraphTypePie
 
 	if input.Description != nil {
@@ -292,8 +292,8 @@ func CreatePieGraph(ctx context.Context, input NewPieGraph) (Graph, error) {
 	return g, err
 }
 
-func CreateTimeseriesGraph(ctx context.Context, input NewTimeseriesGraph) (Graph, error) {
-	g := Graph{}
+func CreateTimeseriesGraph(ctx context.Context, input NewTimeseriesGraph) (*Graph, error) {
+	g := &Graph{}
 	g.Type = GraphTypeTimeseries
 
 	if input.Description != nil {
