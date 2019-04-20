@@ -86,6 +86,12 @@ const (
 	GraphTypeTimeseries GraphType = "TIMESERIES"
 )
 
+var AllGraphType = []GraphType{
+	GraphTypeLine,
+	GraphTypePie,
+	GraphTypeTimeseries,
+}
+
 func (e GraphType) IsValid() bool {
 	switch e {
 	case GraphTypeLine, GraphTypePie, GraphTypeTimeseries:
