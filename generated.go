@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/99designs/gqlgen/graphql"
@@ -120,77 +121,77 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
-	case "Graph.Created":
+	case "Graph.created":
 		if e.complexity.Graph.Created == nil {
 			break
 		}
 
 		return e.complexity.Graph.Created(childComplexity), true
 
-	case "Graph.Creator":
+	case "Graph.creator":
 		if e.complexity.Graph.Creator == nil {
 			break
 		}
 
 		return e.complexity.Graph.Creator(childComplexity), true
 
-	case "Graph.Data":
+	case "Graph.data":
 		if e.complexity.Graph.Data == nil {
 			break
 		}
 
 		return e.complexity.Graph.Data(childComplexity), true
 
-	case "Graph.Description":
+	case "Graph.description":
 		if e.complexity.Graph.Description == nil {
 			break
 		}
 
 		return e.complexity.Graph.Description(childComplexity), true
 
-	case "Graph.ID":
+	case "Graph.id":
 		if e.complexity.Graph.ID == nil {
 			break
 		}
 
 		return e.complexity.Graph.ID(childComplexity), true
 
-	case "Graph.Modified":
+	case "Graph.modified":
 		if e.complexity.Graph.Modified == nil {
 			break
 		}
 
 		return e.complexity.Graph.Modified(childComplexity), true
 
-	case "Graph.Type":
+	case "Graph.type":
 		if e.complexity.Graph.Type == nil {
 			break
 		}
 
 		return e.complexity.Graph.Type(childComplexity), true
 
-	case "Graph.URL":
+	case "Graph.url":
 		if e.complexity.Graph.URL == nil {
 			break
 		}
 
 		return e.complexity.Graph.URL(childComplexity), true
 
-	case "Meta.Key":
+	case "Meta.key":
 		if e.complexity.Meta.Key == nil {
 			break
 		}
 
 		return e.complexity.Meta.Key(childComplexity), true
 
-	case "Meta.Value":
+	case "Meta.value":
 		if e.complexity.Meta.Value == nil {
 			break
 		}
 
 		return e.complexity.Meta.Value(childComplexity), true
 
-	case "Mutation.CreateLineGraph":
+	case "Mutation.createLineGraph":
 		if e.complexity.Mutation.CreateLineGraph == nil {
 			break
 		}
@@ -202,7 +203,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateLineGraph(childComplexity, args["input"].(NewLineGraph)), true
 
-	case "Mutation.CreatePieGraph":
+	case "Mutation.createPieGraph":
 		if e.complexity.Mutation.CreatePieGraph == nil {
 			break
 		}
@@ -214,7 +215,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreatePieGraph(childComplexity, args["input"].(NewPieGraph)), true
 
-	case "Mutation.CreateTimeseriesGraph":
+	case "Mutation.createTimeseriesGraph":
 		if e.complexity.Mutation.CreateTimeseriesGraph == nil {
 			break
 		}
@@ -226,42 +227,42 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateTimeseriesGraph(childComplexity, args["input"].(NewTimeseriesGraph)), true
 
-	case "PairPoint.Meta":
+	case "PairPoint.meta":
 		if e.complexity.PairPoint.Meta == nil {
 			break
 		}
 
 		return e.complexity.PairPoint.Meta(childComplexity), true
 
-	case "PairPoint.X":
+	case "PairPoint.x":
 		if e.complexity.PairPoint.X == nil {
 			break
 		}
 
 		return e.complexity.PairPoint.X(childComplexity), true
 
-	case "PairPoint.Y":
+	case "PairPoint.y":
 		if e.complexity.PairPoint.Y == nil {
 			break
 		}
 
 		return e.complexity.PairPoint.Y(childComplexity), true
 
-	case "PiePoint.Meta":
+	case "PiePoint.meta":
 		if e.complexity.PiePoint.Meta == nil {
 			break
 		}
 
 		return e.complexity.PiePoint.Meta(childComplexity), true
 
-	case "PiePoint.Percent":
+	case "PiePoint.percent":
 		if e.complexity.PiePoint.Percent == nil {
 			break
 		}
 
 		return e.complexity.PiePoint.Percent(childComplexity), true
 
-	case "Query.GetGraph":
+	case "Query.getGraph":
 		if e.complexity.Query.GetGraph == nil {
 			break
 		}
@@ -273,63 +274,63 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.GetGraph(childComplexity, args["id"].(string)), true
 
-	case "TimePoint.Meta":
+	case "TimePoint.meta":
 		if e.complexity.TimePoint.Meta == nil {
 			break
 		}
 
 		return e.complexity.TimePoint.Meta(childComplexity), true
 
-	case "TimePoint.Timestamp":
+	case "TimePoint.timestamp":
 		if e.complexity.TimePoint.Timestamp == nil {
 			break
 		}
 
 		return e.complexity.TimePoint.Timestamp(childComplexity), true
 
-	case "TimePoint.Value":
+	case "TimePoint.value":
 		if e.complexity.TimePoint.Value == nil {
 			break
 		}
 
 		return e.complexity.TimePoint.Value(childComplexity), true
 
-	case "User.APIKey":
+	case "User.apikey":
 		if e.complexity.User.APIKey == nil {
 			break
 		}
 
 		return e.complexity.User.APIKey(childComplexity), true
 
-	case "User.Created":
+	case "User.created":
 		if e.complexity.User.Created == nil {
 			break
 		}
 
 		return e.complexity.User.Created(childComplexity), true
 
-	case "User.ID":
+	case "User.id":
 		if e.complexity.User.ID == nil {
 			break
 		}
 
 		return e.complexity.User.ID(childComplexity), true
 
-	case "User.Modified":
+	case "User.modified":
 		if e.complexity.User.Modified == nil {
 			break
 		}
 
 		return e.complexity.User.Modified(childComplexity), true
 
-	case "User.Name":
+	case "User.name":
 		if e.complexity.User.Name == nil {
 			break
 		}
 
 		return e.complexity.User.Name(childComplexity), true
 
-	case "User.Role":
+	case "User.role":
 		if e.complexity.User.Role == nil {
 			break
 		}
@@ -2500,10 +2501,10 @@ func (ec *executionContext) _DataPoint(ctx context.Context, sel ast.SelectionSet
 var graphImplementors = []string{"Graph"}
 
 func (ec *executionContext) _Graph(ctx context.Context, sel ast.SelectionSet, obj *Graph) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, graphImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, graphImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -2511,24 +2512,24 @@ func (ec *executionContext) _Graph(ctx context.Context, sel ast.SelectionSet, ob
 		case "id":
 			out.Values[i] = ec._Graph_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "description":
 			out.Values[i] = ec._Graph_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "creator":
 			out.Values[i] = ec._Graph_creator(ctx, field, obj)
 		case "data":
 			out.Values[i] = ec._Graph_data(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "type":
 			out.Values[i] = ec._Graph_type(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "url":
 			field := field
@@ -2540,26 +2541,26 @@ func (ec *executionContext) _Graph(ctx context.Context, sel ast.SelectionSet, ob
 				}()
 				res = ec._Graph_url(ctx, field, obj)
 				if res == graphql.Null {
-					invalid = true
+					atomic.AddUint32(&invalids, 1)
 				}
 				return res
 			})
 		case "created":
 			out.Values[i] = ec._Graph_created(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "modified":
 			out.Values[i] = ec._Graph_modified(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				atomic.AddUint32(&invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -2568,10 +2569,10 @@ func (ec *executionContext) _Graph(ctx context.Context, sel ast.SelectionSet, ob
 var metaImplementors = []string{"Meta"}
 
 func (ec *executionContext) _Meta(ctx context.Context, sel ast.SelectionSet, obj *Meta) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, metaImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, metaImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -2579,19 +2580,19 @@ func (ec *executionContext) _Meta(ctx context.Context, sel ast.SelectionSet, obj
 		case "key":
 			out.Values[i] = ec._Meta_key(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "value":
 			out.Values[i] = ec._Meta_value(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -2600,14 +2601,14 @@ func (ec *executionContext) _Meta(ctx context.Context, sel ast.SelectionSet, obj
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, mutationImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, mutationImplementors)
 
 	ctx = graphql.WithResolverContext(ctx, &graphql.ResolverContext{
 		Object: "Mutation",
 	})
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -2615,24 +2616,24 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createLineGraph":
 			out.Values[i] = ec._Mutation_createLineGraph(ctx, field)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "createPieGraph":
 			out.Values[i] = ec._Mutation_createPieGraph(ctx, field)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "createTimeseriesGraph":
 			out.Values[i] = ec._Mutation_createTimeseriesGraph(ctx, field)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -2641,10 +2642,10 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 var pairPointImplementors = []string{"PairPoint", "DataPoint"}
 
 func (ec *executionContext) _PairPoint(ctx context.Context, sel ast.SelectionSet, obj *PairPoint) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, pairPointImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, pairPointImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -2652,24 +2653,24 @@ func (ec *executionContext) _PairPoint(ctx context.Context, sel ast.SelectionSet
 		case "x":
 			out.Values[i] = ec._PairPoint_x(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "y":
 			out.Values[i] = ec._PairPoint_y(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "meta":
 			out.Values[i] = ec._PairPoint_meta(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -2678,10 +2679,10 @@ func (ec *executionContext) _PairPoint(ctx context.Context, sel ast.SelectionSet
 var piePointImplementors = []string{"PiePoint", "DataPoint"}
 
 func (ec *executionContext) _PiePoint(ctx context.Context, sel ast.SelectionSet, obj *PiePoint) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, piePointImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, piePointImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -2689,19 +2690,19 @@ func (ec *executionContext) _PiePoint(ctx context.Context, sel ast.SelectionSet,
 		case "percent":
 			out.Values[i] = ec._PiePoint_percent(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "meta":
 			out.Values[i] = ec._PiePoint_meta(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -2710,14 +2711,14 @@ func (ec *executionContext) _PiePoint(ctx context.Context, sel ast.SelectionSet,
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, queryImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, queryImplementors)
 
 	ctx = graphql.WithResolverContext(ctx, &graphql.ResolverContext{
 		Object: "Query",
 	})
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -2742,7 +2743,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -2751,10 +2752,10 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 var timePointImplementors = []string{"TimePoint", "DataPoint"}
 
 func (ec *executionContext) _TimePoint(ctx context.Context, sel ast.SelectionSet, obj *TimePoint) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, timePointImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, timePointImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -2762,24 +2763,24 @@ func (ec *executionContext) _TimePoint(ctx context.Context, sel ast.SelectionSet
 		case "timestamp":
 			out.Values[i] = ec._TimePoint_timestamp(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "value":
 			out.Values[i] = ec._TimePoint_value(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "meta":
 			out.Values[i] = ec._TimePoint_meta(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -2788,10 +2789,10 @@ func (ec *executionContext) _TimePoint(ctx context.Context, sel ast.SelectionSet
 var userImplementors = []string{"User"}
 
 func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *User) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, userImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, userImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -2799,39 +2800,39 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._User_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "name":
 			out.Values[i] = ec._User_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "role":
 			out.Values[i] = ec._User_role(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "apikey":
 			out.Values[i] = ec._User_apikey(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "created":
 			out.Values[i] = ec._User_created(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "modified":
 			out.Values[i] = ec._User_modified(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -2840,10 +2841,10 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 var __DirectiveImplementors = []string{"__Directive"}
 
 func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionSet, obj *introspection.Directive) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, __DirectiveImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, __DirectiveImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -2851,26 +2852,26 @@ func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionS
 		case "name":
 			out.Values[i] = ec.___Directive_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "description":
 			out.Values[i] = ec.___Directive_description(ctx, field, obj)
 		case "locations":
 			out.Values[i] = ec.___Directive_locations(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "args":
 			out.Values[i] = ec.___Directive_args(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -2879,10 +2880,10 @@ func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionS
 var __EnumValueImplementors = []string{"__EnumValue"}
 
 func (ec *executionContext) ___EnumValue(ctx context.Context, sel ast.SelectionSet, obj *introspection.EnumValue) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, __EnumValueImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, __EnumValueImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -2890,14 +2891,14 @@ func (ec *executionContext) ___EnumValue(ctx context.Context, sel ast.SelectionS
 		case "name":
 			out.Values[i] = ec.___EnumValue_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "description":
 			out.Values[i] = ec.___EnumValue_description(ctx, field, obj)
 		case "isDeprecated":
 			out.Values[i] = ec.___EnumValue_isDeprecated(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "deprecationReason":
 			out.Values[i] = ec.___EnumValue_deprecationReason(ctx, field, obj)
@@ -2906,7 +2907,7 @@ func (ec *executionContext) ___EnumValue(ctx context.Context, sel ast.SelectionS
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -2915,10 +2916,10 @@ func (ec *executionContext) ___EnumValue(ctx context.Context, sel ast.SelectionS
 var __FieldImplementors = []string{"__Field"}
 
 func (ec *executionContext) ___Field(ctx context.Context, sel ast.SelectionSet, obj *introspection.Field) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, __FieldImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, __FieldImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -2926,24 +2927,24 @@ func (ec *executionContext) ___Field(ctx context.Context, sel ast.SelectionSet, 
 		case "name":
 			out.Values[i] = ec.___Field_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "description":
 			out.Values[i] = ec.___Field_description(ctx, field, obj)
 		case "args":
 			out.Values[i] = ec.___Field_args(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "type":
 			out.Values[i] = ec.___Field_type(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "isDeprecated":
 			out.Values[i] = ec.___Field_isDeprecated(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "deprecationReason":
 			out.Values[i] = ec.___Field_deprecationReason(ctx, field, obj)
@@ -2952,7 +2953,7 @@ func (ec *executionContext) ___Field(ctx context.Context, sel ast.SelectionSet, 
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -2961,10 +2962,10 @@ func (ec *executionContext) ___Field(ctx context.Context, sel ast.SelectionSet, 
 var __InputValueImplementors = []string{"__InputValue"}
 
 func (ec *executionContext) ___InputValue(ctx context.Context, sel ast.SelectionSet, obj *introspection.InputValue) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, __InputValueImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, __InputValueImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -2972,14 +2973,14 @@ func (ec *executionContext) ___InputValue(ctx context.Context, sel ast.Selection
 		case "name":
 			out.Values[i] = ec.___InputValue_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "description":
 			out.Values[i] = ec.___InputValue_description(ctx, field, obj)
 		case "type":
 			out.Values[i] = ec.___InputValue_type(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "defaultValue":
 			out.Values[i] = ec.___InputValue_defaultValue(ctx, field, obj)
@@ -2988,7 +2989,7 @@ func (ec *executionContext) ___InputValue(ctx context.Context, sel ast.Selection
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -2997,10 +2998,10 @@ func (ec *executionContext) ___InputValue(ctx context.Context, sel ast.Selection
 var __SchemaImplementors = []string{"__Schema"}
 
 func (ec *executionContext) ___Schema(ctx context.Context, sel ast.SelectionSet, obj *introspection.Schema) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, __SchemaImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, __SchemaImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -3008,12 +3009,12 @@ func (ec *executionContext) ___Schema(ctx context.Context, sel ast.SelectionSet,
 		case "types":
 			out.Values[i] = ec.___Schema_types(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "queryType":
 			out.Values[i] = ec.___Schema_queryType(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "mutationType":
 			out.Values[i] = ec.___Schema_mutationType(ctx, field, obj)
@@ -3022,14 +3023,14 @@ func (ec *executionContext) ___Schema(ctx context.Context, sel ast.SelectionSet,
 		case "directives":
 			out.Values[i] = ec.___Schema_directives(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -3038,10 +3039,10 @@ func (ec *executionContext) ___Schema(ctx context.Context, sel ast.SelectionSet,
 var __TypeImplementors = []string{"__Type"}
 
 func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, obj *introspection.Type) graphql.Marshaler {
-	fields := graphql.CollectFields(ctx, sel, __TypeImplementors)
+	fields := graphql.CollectFields(ec.RequestContext, sel, __TypeImplementors)
 
 	out := graphql.NewFieldSet(fields)
-	invalid := false
+	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
@@ -3049,7 +3050,7 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 		case "kind":
 			out.Values[i] = ec.___Type_kind(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalid = true
+				invalids++
 			}
 		case "name":
 			out.Values[i] = ec.___Type_name(ctx, field, obj)
@@ -3072,7 +3073,7 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 		}
 	}
 	out.Dispatch()
-	if invalid {
+	if invalids > 0 {
 		return graphql.Null
 	}
 	return out
@@ -3087,7 +3088,13 @@ func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interf
 }
 
 func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
-	return graphql.MarshalBoolean(v)
+	res := graphql.MarshalBoolean(v)
+	if res == graphql.Null {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) marshalNDataPoint2githubᚗcomᚋiccoᚋchartsᚐDataPoint(ctx context.Context, sel ast.SelectionSet, v DataPoint) graphql.Marshaler {
@@ -3136,7 +3143,13 @@ func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v inter
 }
 
 func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
-	return graphql.MarshalFloat(v)
+	res := graphql.MarshalFloat(v)
+	if res == graphql.Null {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) marshalNGraph2githubᚗcomᚋiccoᚋchartsᚐGraph(ctx context.Context, sel ast.SelectionSet, v Graph) graphql.Marshaler {
@@ -3167,7 +3180,13 @@ func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface
 }
 
 func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	return graphql.MarshalID(v)
+	res := graphql.MarshalID(v)
+	if res == graphql.Null {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) marshalNMeta2ᚕᚖgithubᚗcomᚋiccoᚋchartsᚐMeta(ctx context.Context, sel ast.SelectionSet, v []*Meta) graphql.Marshaler {
@@ -3264,7 +3283,13 @@ func (ec *executionContext) unmarshalNString2string(ctx context.Context, v inter
 }
 
 func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	return graphql.MarshalString(v)
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {
@@ -3272,13 +3297,13 @@ func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v in
 }
 
 func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel ast.SelectionSet, v time.Time) graphql.Marshaler {
-	if v.IsZero() {
+	res := graphql.MarshalTime(v)
+	if res == graphql.Null {
 		if !ec.HasError(graphql.GetResolverContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
-		return graphql.Null
 	}
-	return graphql.MarshalTime(v)
+	return res
 }
 
 func (ec *executionContext) unmarshalNTimePointInput2ᚕᚖgithubᚗcomᚋiccoᚋchartsᚐTimePointInput(ctx context.Context, v interface{}) ([]*TimePointInput, error) {
@@ -3347,7 +3372,13 @@ func (ec *executionContext) unmarshalN__DirectiveLocation2string(ctx context.Con
 }
 
 func (ec *executionContext) marshalN__DirectiveLocation2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	return graphql.MarshalString(v)
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) unmarshalN__DirectiveLocation2ᚕstring(ctx context.Context, v interface{}) ([]string, error) {
@@ -3512,7 +3543,13 @@ func (ec *executionContext) unmarshalN__TypeKind2string(ctx context.Context, v i
 }
 
 func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	return graphql.MarshalString(v)
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
