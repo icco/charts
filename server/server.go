@@ -25,7 +25,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/icco/charts"
 	"github.com/icco/gutil/logging"
-	"github.com/vektah/gqlparser/gqlerror"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
