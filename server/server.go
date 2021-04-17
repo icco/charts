@@ -15,7 +15,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/apollotracing"
 	"github.com/99designs/gqlgen/handler"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5middleware"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/icco/charts"
 	"github.com/icco/gutil/logging"
