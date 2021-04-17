@@ -1,4 +1,7 @@
 GEM
+  specs:
+
+GEM
   remote: https://rubygems.org/
   specs:
     activesupport (5.2.2)
@@ -27,4 +30,4 @@ DEPENDENCIES
   graphql-client!
 
 BUNDLED WITH
-   1.16.6
+   2.2.16
