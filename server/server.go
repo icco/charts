@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -12,17 +11,18 @@ import (
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/monitoredresource"
 	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
-	"github.com/99designs/gqlgen-contrib/gqlopencensus"
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/99designs/gqlgen/graphql/handler/apollotracing"
 	"github.com/99designs/gqlgen/handler"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5middleware"
 	"github.com/go-chi/cors"
 	"github.com/icco/charts"
-	sdLogging "github.com/icco/logrus-stackdriver-formatter"
+	"github.com/icco/gutil/logging"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 	"gopkg.in/unrolled/render.v1"
 	"gopkg.in/unrolled/secure.v1"
 )
@@ -46,28 +46,27 @@ var (
 
 	dbURL = os.Getenv("DATABASE_URL")
 
-	log = charts.InitLogging()
+	log = logging.Must(logging.NewLogger(charts.Service))
 )
 
 func main() {
 	if dbURL == "" {
-		log.Fatalf("DATABASE_URL is empty!")
+		log.Fatalw("DATABASE_URL is empty!")
 	}
 
-	_, err := charts.InitDB(dbURL)
-	if err != nil {
-		log.Fatalf("Init DB: %+v", err)
+	if _, err := charts.InitDB(dbURL); err != nil {
+		log.Fatalw("Init DB", zap.Error(err))
 	}
 
 	port := "8080"
 	if fromEnv := os.Getenv("PORT"); fromEnv != "" {
 		port = fromEnv
 	}
-	log.Debugf("Starting up on http://localhost:%s", port)
+	log.Infow("Starting up", "host", fmt.Sprintf("http://localhost:%s", port))
 
 	if os.Getenv("ENABLE_STACKDRIVER") != "" {
 		labels := &stackdriver.Labels{}
-		labels.Set("app", "charts", "The name of the current app.")
+		labels.Set("app", charts.Service, "The name of the current app.")
 		sd, err := stackdriver.NewExporter(stackdriver.Options{
 			ProjectID:               "icco-cloud",
 			MonitoredResource:       monitoredresource.Autodetect(),
@@ -76,7 +75,7 @@ func main() {
 		})
 
 		if err != nil {
-			log.Fatalf("Failed to create the Stackdriver exporter: %v", err)
+			log.Fatalw("Failed to create the Stackdriver exporter", zap.Error(err))
 		}
 		defer sd.Flush()
 
@@ -90,12 +89,8 @@ func main() {
 	isDev := os.Getenv("NAT_ENV") != "production"
 
 	r := chi.NewRouter()
-
-	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(middleware.Recoverer)
-	r.Use(sdLogging.LoggingMiddleware(log))
-
+	r.Use(logging.Middleware(log.Desugar(), "icco-cloud"))
 	r.Use(cors.New(cors.Options{
 		AllowCredentials:   true,
 		OptionsPassthrough: true,
@@ -164,10 +159,10 @@ func main() {
 		ochttp.ServerRequestCountView,
 		ochttp.ServerResponseCountByStatusCode,
 	}...); err != nil {
-		log.Fatal("Failed to register ochttp.DefaultServerViews")
+		log.Fatalw("Failed to register ochttp.DefaultServerViews")
 	}
 
-	log.Fatal(http.ListenAndServe(":"+port, h))
+	log.Fatalw(http.ListenAndServe(":"+port, h))
 }
 
 func buildGraphQLHandler() http.HandlerFunc {
@@ -176,9 +171,9 @@ func buildGraphQLHandler() http.HandlerFunc {
 		handler.RecoverFunc(func(ctx context.Context, intErr interface{}) error {
 			err, ok := intErr.(error)
 			if ok {
-				log.WithError(err).Error("Error seen during graphql")
+				log.Errorw("Error seen during graphql", zap.Error(err))
 			}
-			return errors.New("Fatal message seen when processing request")
+			return fmt.Errorf("fatal message seen when processing request")
 		}),
 		handler.CacheSize(512),
 		handler.RequestMiddleware(func(ctx context.Context, next func(ctx context.Context) []byte) []byte {
@@ -192,12 +187,11 @@ func buildGraphQLHandler() http.HandlerFunc {
 				"extensions": rctx.Extensions,
 			}
 
-			log.WithField("gql", subsetContext).Debugf("request gql")
+			log.Debugw("request gql", "gql", subsetContext)
 
 			return next(ctx)
 		}),
-		handler.Tracer(gqlopencensus.New()),
-	)
+	).Use(apollotracing.Tracer{})
 }
 
 func renderGraphHandler(w http.ResponseWriter, r *http.Request) {
@@ -205,7 +199,7 @@ func renderGraphHandler(w http.ResponseWriter, r *http.Request) {
 	gid := chi.URLParam(r, "graphID")
 	g, err := charts.GetGraph(r.Context(), gid)
 	if err != nil {
-		log.WithError(err).Error("get graph")
+		log.Errorw("get graph", zap.Error(err))
 		http.Error(w, "Error getting graph.", http.StatusNotFound)
 		return
 	}
@@ -214,7 +208,7 @@ func renderGraphHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/png")
 	err = g.Render(r.Context(), w)
 	if err != nil {
-		log.WithError(err).Error("render graph")
+		log.Errorw("render graph", zap.Error(err))
 		http.Error(w, "Error rendering graph.", http.StatusInternalServerError)
 		return
 	}
