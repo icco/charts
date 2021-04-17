@@ -1,6 +1,6 @@
 module github.com/icco/charts
 
-go 1.12
+go 1.14
 
 require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.5
