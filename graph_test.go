@@ -12,8 +12,6 @@ func TestValidJSONParsing(t *testing.T) {
 		JSON string
 	}
 
-	InitLogging()
-
 	for i, test := range []testStruct{
 		testStruct{GraphTypeTimeseries, "[]"},
 		testStruct{GraphTypePie, "[]"},

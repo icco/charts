@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/wcharczuk/go-chart" //exposes "chart"
+	"go.uber.org/zap"
 )
 
 type Graph struct {
@@ -68,7 +69,7 @@ func GraphCount(ctx context.Context) int64 {
 	var cnt int64
 	err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM graphs").Scan(&cnt)
 	if err != nil {
-		log.WithError(err).Warn("Error getting count")
+		log.Warnw("error getting count", zap.Error(err))
 		return 0
 	}
 
@@ -81,8 +82,7 @@ func (g *Graph) parseJSONToData(data json.RawMessage) error {
 
 	err := json.Unmarshal(data, &rawData)
 	if err != nil {
-		log.WithError(err).Error("problem parsing json")
-		return err
+		return fmt.Errorf("parsing json: %w", err)
 	}
 
 	ret := make([]DataPoint, len(rawData))

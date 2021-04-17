@@ -2,27 +2,34 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/monitoredresource"
 	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
-	"github.com/99designs/gqlgen-contrib/gqlopencensus"
-	"github.com/99designs/gqlgen/graphql"
-	"github.com/99designs/gqlgen/handler"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	gql "github.com/99designs/gqlgen/graphql"
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/apollotracing"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/lru"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
+	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/icco/charts"
-	sdLogging "github.com/icco/logrus-stackdriver-formatter"
+	"github.com/icco/gutil/logging"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 	"gopkg.in/unrolled/render.v1"
 	"gopkg.in/unrolled/secure.v1"
 )
@@ -45,29 +52,27 @@ var (
 	})
 
 	dbURL = os.Getenv("DATABASE_URL")
-
-	log = charts.InitLogging()
+	log   = logging.Must(logging.NewLogger(charts.Service))
 )
 
 func main() {
 	if dbURL == "" {
-		log.Fatalf("DATABASE_URL is empty!")
+		log.Fatalw("DATABASE_URL is empty!")
 	}
 
-	_, err := charts.InitDB(dbURL)
-	if err != nil {
-		log.Fatalf("Init DB: %+v", err)
+	if _, err := charts.InitDB(dbURL); err != nil {
+		log.Fatalw("Init DB", zap.Error(err))
 	}
 
 	port := "8080"
 	if fromEnv := os.Getenv("PORT"); fromEnv != "" {
 		port = fromEnv
 	}
-	log.Debugf("Starting up on http://localhost:%s", port)
+	log.Infow("Starting up", "host", fmt.Sprintf("http://localhost:%s", port))
 
 	if os.Getenv("ENABLE_STACKDRIVER") != "" {
 		labels := &stackdriver.Labels{}
-		labels.Set("app", "charts", "The name of the current app.")
+		labels.Set("app", charts.Service, "The name of the current app.")
 		sd, err := stackdriver.NewExporter(stackdriver.Options{
 			ProjectID:               "icco-cloud",
 			MonitoredResource:       monitoredresource.Autodetect(),
@@ -76,7 +81,7 @@ func main() {
 		})
 
 		if err != nil {
-			log.Fatalf("Failed to create the Stackdriver exporter: %v", err)
+			log.Fatalw("Failed to create the Stackdriver exporter", zap.Error(err))
 		}
 		defer sd.Flush()
 
@@ -87,15 +92,43 @@ func main() {
 		})
 	}
 
+	gh := handler.New(charts.NewExecutableSchema(charts.New()))
+	gh.AddTransport(transport.Websocket{KeepAlivePingInterval: 10 * time.Second})
+	gh.AddTransport(transport.Options{})
+	gh.AddTransport(transport.GET{})
+	gh.AddTransport(transport.POST{})
+	gh.AddTransport(transport.MultipartForm{})
+	gh.Use(apollotracing.Tracer{})
+	gh.SetQueryCache(lru.New(1000))
+	gh.Use(extension.Introspection{})
+
+	gh.SetErrorPresenter(func(ctx context.Context, e error) *gqlerror.Error {
+		err := gql.DefaultErrorPresenter(ctx, e)
+
+		log.Warnw("graphql request error", zap.Error(e))
+		if strings.Contains(e.Error(), "forbidden") {
+			return gqlerror.Errorf("forbidden: not a valid user")
+		}
+
+		return err
+	})
+	gh.SetRecoverFunc(func(ctx context.Context, err interface{}) error {
+		if e, ok := err.(error); !ok {
+			log.Errorw("graphql fatal request error", "error", err)
+		} else {
+			log.Errorw("graphql fatal request error", zap.Error(e))
+		}
+
+		return fmt.Errorf("Internal server error!")
+	})
+
+	gh.AroundResponses(GqlLoggingMiddleware)
+
 	isDev := os.Getenv("NAT_ENV") != "production"
 
 	r := chi.NewRouter()
-
-	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(middleware.Recoverer)
-	r.Use(sdLogging.LoggingMiddleware(log))
-
+	r.Use(logging.Middleware(log.Desugar(), "icco-cloud"))
 	r.Use(cors.New(cors.Options{
 		AllowCredentials:   true,
 		OptionsPassthrough: true,
@@ -152,8 +185,8 @@ func main() {
 			http.ServeFile(w, r, fmt.Sprintf("%s/server/views/static/%s", base, filename))
 		})
 
-		r.Handle("/play", handler.Playground("graphql", "/graphql"))
-		r.Handle("/graphql", buildGraphQLHandler())
+		r.Handle("/play", playground.Handler("charts", "/graphql"))
+		r.Handle("/graphql", gh)
 		r.Get("/graph/{graphID}", renderGraphHandler)
 	})
 	h := &ochttp.Handler{
@@ -164,40 +197,10 @@ func main() {
 		ochttp.ServerRequestCountView,
 		ochttp.ServerResponseCountByStatusCode,
 	}...); err != nil {
-		log.Fatal("Failed to register ochttp.DefaultServerViews")
+		log.Fatalw("Failed to register ochttp.DefaultServerViews")
 	}
 
 	log.Fatal(http.ListenAndServe(":"+port, h))
-}
-
-func buildGraphQLHandler() http.HandlerFunc {
-	return handler.GraphQL(
-		charts.NewExecutableSchema(charts.New()),
-		handler.RecoverFunc(func(ctx context.Context, intErr interface{}) error {
-			err, ok := intErr.(error)
-			if ok {
-				log.WithError(err).Error("Error seen during graphql")
-			}
-			return errors.New("Fatal message seen when processing request")
-		}),
-		handler.CacheSize(512),
-		handler.RequestMiddleware(func(ctx context.Context, next func(ctx context.Context) []byte) []byte {
-			rctx := graphql.GetRequestContext(ctx)
-
-			// We do this because RequestContext has fields that can't be easily
-			// serialized in json, and we don't care about them.
-			subsetContext := map[string]interface{}{
-				"query":      rctx.RawQuery,
-				"variables":  rctx.Variables,
-				"extensions": rctx.Extensions,
-			}
-
-			log.WithField("gql", subsetContext).Debugf("request gql")
-
-			return next(ctx)
-		}),
-		handler.Tracer(gqlopencensus.New()),
-	)
 }
 
 func renderGraphHandler(w http.ResponseWriter, r *http.Request) {
@@ -205,7 +208,7 @@ func renderGraphHandler(w http.ResponseWriter, r *http.Request) {
 	gid := chi.URLParam(r, "graphID")
 	g, err := charts.GetGraph(r.Context(), gid)
 	if err != nil {
-		log.WithError(err).Error("get graph")
+		log.Errorw("get graph", zap.Error(err))
 		http.Error(w, "Error getting graph.", http.StatusNotFound)
 		return
 	}
@@ -214,7 +217,7 @@ func renderGraphHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/png")
 	err = g.Render(r.Context(), w)
 	if err != nil {
-		log.WithError(err).Error("render graph")
+		log.Errorw("render graph", zap.Error(err))
 		http.Error(w, "Error rendering graph.", http.StatusInternalServerError)
 		return
 	}
@@ -230,4 +233,22 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 	Renderer.JSON(w, http.StatusNotFound, map[string]string{
 		"error": "404: This page could not be found",
 	})
+}
+
+// GqlLoggingMiddleware is a middleware for gqlgen that logs all gql requests to debug.
+func GqlLoggingMiddleware(ctx context.Context, next gql.ResponseHandler) *gql.Response {
+	rctx := gql.GetOperationContext(ctx)
+
+	// We do this because RequestContext has fields that can't be easily
+	// serialized in json, and we don't care about them.
+	subsetContext := map[string]interface{}{
+		"query":     rctx.RawQuery,
+		"variables": rctx.Variables,
+		"name":      rctx.OperationName,
+		"stats":     rctx.Stats,
+	}
+
+	log.Debugw("request gql", "gql", subsetContext)
+
+	return next(ctx)
 }

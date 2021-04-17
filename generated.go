@@ -14,8 +14,8 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
-	"github.com/vektah/gqlparser"
-	"github.com/vektah/gqlparser/ast"
+	gqlparser "github.com/vektah/gqlparser/v2"
+	"github.com/vektah/gqlparser/v2/ast"
 )
 
 // region    ************************** generated!.gotpl **************************
@@ -341,62 +341,49 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	return 0, false
 }
 
-func (e *executableSchema) Query(ctx context.Context, op *ast.OperationDefinition) *graphql.Response {
-	ec := executionContext{graphql.GetRequestContext(ctx), e}
+func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
+	rc := graphql.GetOperationContext(ctx)
+	ec := executionContext{rc, e}
+	first := true
 
-	buf := ec.RequestMiddleware(ctx, func(ctx context.Context) []byte {
-		data := ec._Query(ctx, op.SelectionSet)
-		var buf bytes.Buffer
-		data.MarshalGQL(&buf)
-		return buf.Bytes()
-	})
+	switch rc.Operation.Operation {
+	case ast.Query:
+		return func(ctx context.Context) *graphql.Response {
+			if !first {
+				return nil
+			}
+			first = false
+			data := ec._Query(ctx, rc.Operation.SelectionSet)
+			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
 
-	return &graphql.Response{
-		Data:       buf,
-		Errors:     ec.Errors,
-		Extensions: ec.Extensions,
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
+	case ast.Mutation:
+		return func(ctx context.Context) *graphql.Response {
+			if !first {
+				return nil
+			}
+			first = false
+			data := ec._Mutation(ctx, rc.Operation.SelectionSet)
+			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
+
+	default:
+		return graphql.OneShot(graphql.ErrorResponse(ctx, "unsupported GraphQL operation"))
 	}
-}
-
-func (e *executableSchema) Mutation(ctx context.Context, op *ast.OperationDefinition) *graphql.Response {
-	ec := executionContext{graphql.GetRequestContext(ctx), e}
-
-	buf := ec.RequestMiddleware(ctx, func(ctx context.Context) []byte {
-		data := ec._Mutation(ctx, op.SelectionSet)
-		var buf bytes.Buffer
-		data.MarshalGQL(&buf)
-		return buf.Bytes()
-	})
-
-	return &graphql.Response{
-		Data:       buf,
-		Errors:     ec.Errors,
-		Extensions: ec.Extensions,
-	}
-}
-
-func (e *executableSchema) Subscription(ctx context.Context, op *ast.OperationDefinition) func() *graphql.Response {
-	return graphql.OneShot(graphql.ErrorResponse(ctx, "subscriptions are not supported"))
 }
 
 type executionContext struct {
-	*graphql.RequestContext
+	*graphql.OperationContext
 	*executableSchema
-}
-
-func (ec *executionContext) FieldMiddleware(ctx context.Context, obj interface{}, next graphql.Resolver) (ret interface{}) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = nil
-		}
-	}()
-	res, err := ec.ResolverMiddleware(ctx, next)
-	if err != nil {
-		ec.Error(ctx, err)
-		return nil
-	}
-	return res
 }
 
 func (ec *executionContext) introspectSchema() (*introspection.Schema, error) {
@@ -413,8 +400,8 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 	return introspection.WrapTypeFromDef(parsedSchema, parsedSchema.Types[name]), nil
 }
 
-var parsedSchema = gqlparser.MustLoadSchema(
-	&ast.Source{Name: "schema.graphql", Input: `type Graph {
+var sources = []*ast.Source{
+	{Name: "schema.graphql", Input: `type Graph {
   id: ID!
   description: String!
   creator: User
@@ -516,8 +503,9 @@ type Mutation {
   createPieGraph(input: NewPieGraph!): Graph!
   createTimeseriesGraph(input: NewTimeseriesGraph!): Graph!
 }
-`},
-)
+`, BuiltIn: false},
+}
+var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // endregion ************************** generated!.gotpl **************************
 
@@ -528,6 +516,7 @@ func (ec *executionContext) field_Mutation_createLineGraph_args(ctx context.Cont
 	args := map[string]interface{}{}
 	var arg0 NewLineGraph
 	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNNewLineGraph2githubᚗcomᚋiccoᚋchartsᚐNewLineGraph(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -542,6 +531,7 @@ func (ec *executionContext) field_Mutation_createPieGraph_args(ctx context.Conte
 	args := map[string]interface{}{}
 	var arg0 NewPieGraph
 	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNNewPieGraph2githubᚗcomᚋiccoᚋchartsᚐNewPieGraph(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -556,6 +546,7 @@ func (ec *executionContext) field_Mutation_createTimeseriesGraph_args(ctx contex
 	args := map[string]interface{}{}
 	var arg0 NewTimeseriesGraph
 	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNNewTimeseriesGraph2githubᚗcomᚋiccoᚋchartsᚐNewTimeseriesGraph(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -570,6 +561,7 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	args := map[string]interface{}{}
 	var arg0 string
 	if tmp, ok := rawArgs["name"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
 		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -584,6 +576,7 @@ func (ec *executionContext) field_Query_getGraph_args(ctx context.Context, rawAr
 	args := map[string]interface{}{}
 	var arg0 string
 	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 		arg0, err = ec.unmarshalNID2string(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -598,6 +591,7 @@ func (ec *executionContext) field___Type_enumValues_args(ctx context.Context, ra
 	args := map[string]interface{}{}
 	var arg0 bool
 	if tmp, ok := rawArgs["includeDeprecated"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeDeprecated"))
 		arg0, err = ec.unmarshalOBoolean2bool(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -612,6 +606,7 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 	args := map[string]interface{}{}
 	var arg0 bool
 	if tmp, ok := rawArgs["includeDeprecated"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeDeprecated"))
 		arg0, err = ec.unmarshalOBoolean2bool(ctx, tmp)
 		if err != nil {
 			return nil, err
@@ -623,1665 +618,2200 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // endregion ***************************** args.gotpl *****************************
 
+// region    ************************** directives.gotpl **************************
+
+// endregion ************************** directives.gotpl **************************
+
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Graph_id(ctx context.Context, field graphql.CollectedField, obj *Graph) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "Graph",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _Graph_id(ctx context.Context, field graphql.CollectedField, obj *Graph) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Graph",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.ID, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Graph_description(ctx context.Context, field graphql.CollectedField, obj *Graph) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "Graph",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _Graph_description(ctx context.Context, field graphql.CollectedField, obj *Graph) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Graph",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Description, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Graph_creator(ctx context.Context, field graphql.CollectedField, obj *Graph) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "Graph",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _Graph_creator(ctx context.Context, field graphql.CollectedField, obj *Graph) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Graph",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Creator, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.(*User)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalOUser2ᚖgithubᚗcomᚋiccoᚋchartsᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Graph_data(ctx context.Context, field graphql.CollectedField, obj *Graph) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "Graph",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _Graph_data(ctx context.Context, field graphql.CollectedField, obj *Graph) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Graph",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Data, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.([]DataPoint)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNDataPoint2ᚕgithubᚗcomᚋiccoᚋchartsᚐDataPoint(ctx, field.Selections, res)
+	fc.Result = res
+	return ec.marshalNDataPoint2ᚕgithubᚗcomᚋiccoᚋchartsᚐDataPointᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Graph_type(ctx context.Context, field graphql.CollectedField, obj *Graph) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "Graph",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _Graph_type(ctx context.Context, field graphql.CollectedField, obj *Graph) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Graph",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Type, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(GraphType)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNGraphType2githubᚗcomᚋiccoᚋchartsᚐGraphType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Graph_url(ctx context.Context, field graphql.CollectedField, obj *Graph) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "Graph",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) _Graph_url(ctx context.Context, field graphql.CollectedField, obj *Graph) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Graph",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.URL(ctx), nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Graph_created(ctx context.Context, field graphql.CollectedField, obj *Graph) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "Graph",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _Graph_created(ctx context.Context, field graphql.CollectedField, obj *Graph) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Graph",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Created, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(time.Time)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Graph_modified(ctx context.Context, field graphql.CollectedField, obj *Graph) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "Graph",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _Graph_modified(ctx context.Context, field graphql.CollectedField, obj *Graph) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Graph",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Modified, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(time.Time)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Meta_key(ctx context.Context, field graphql.CollectedField, obj *Meta) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "Meta",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _Meta_key(ctx context.Context, field graphql.CollectedField, obj *Meta) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Meta",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Key, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Meta_value(ctx context.Context, field graphql.CollectedField, obj *Meta) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "Meta",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _Meta_value(ctx context.Context, field graphql.CollectedField, obj *Meta) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Meta",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Value, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_createLineGraph(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) _Mutation_createLineGraph(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
+
+	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
 	args, err := ec.field_Mutation_createLineGraph_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
-	rctx.Args = args
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().CreateLineGraph(rctx, args["input"].(NewLineGraph))
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(*Graph)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNGraph2ᚖgithubᚗcomᚋiccoᚋchartsᚐGraph(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_createPieGraph(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) _Mutation_createPieGraph(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
+
+	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
 	args, err := ec.field_Mutation_createPieGraph_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
-	rctx.Args = args
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().CreatePieGraph(rctx, args["input"].(NewPieGraph))
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(*Graph)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNGraph2ᚖgithubᚗcomᚋiccoᚋchartsᚐGraph(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_createTimeseriesGraph(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "Mutation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) _Mutation_createTimeseriesGraph(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
+
+	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
 	args, err := ec.field_Mutation_createTimeseriesGraph_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
-	rctx.Args = args
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().CreateTimeseriesGraph(rctx, args["input"].(NewTimeseriesGraph))
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(*Graph)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNGraph2ᚖgithubᚗcomᚋiccoᚋchartsᚐGraph(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PairPoint_x(ctx context.Context, field graphql.CollectedField, obj *PairPoint) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "PairPoint",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _PairPoint_x(ctx context.Context, field graphql.CollectedField, obj *PairPoint) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PairPoint",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.X, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(float64)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PairPoint_y(ctx context.Context, field graphql.CollectedField, obj *PairPoint) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "PairPoint",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _PairPoint_y(ctx context.Context, field graphql.CollectedField, obj *PairPoint) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PairPoint",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Y, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(float64)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PairPoint_meta(ctx context.Context, field graphql.CollectedField, obj *PairPoint) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "PairPoint",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _PairPoint_meta(ctx context.Context, field graphql.CollectedField, obj *PairPoint) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PairPoint",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Meta, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.([]*Meta)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNMeta2ᚕᚖgithubᚗcomᚋiccoᚋchartsᚐMeta(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PiePoint_percent(ctx context.Context, field graphql.CollectedField, obj *PiePoint) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "PiePoint",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _PiePoint_percent(ctx context.Context, field graphql.CollectedField, obj *PiePoint) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PiePoint",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Percent, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(float64)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PiePoint_meta(ctx context.Context, field graphql.CollectedField, obj *PiePoint) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "PiePoint",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _PiePoint_meta(ctx context.Context, field graphql.CollectedField, obj *PiePoint) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PiePoint",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Meta, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.([]*Meta)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNMeta2ᚕᚖgithubᚗcomᚋiccoᚋchartsᚐMeta(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_getGraph(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) _Query_getGraph(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
+
+	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
 	args, err := ec.field_Query_getGraph_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
-	rctx.Args = args
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Query().GetGraph(rctx, args["id"].(string))
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.(*Graph)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalOGraph2ᚖgithubᚗcomᚋiccoᚋchartsᚐGraph(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
+
+	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
 	args, err := ec.field_Query___type_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
-	rctx.Args = args
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.introspectType(args["name"].(string))
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.(*introspection.Type)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.CollectedField) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.introspectSchema()
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.(*introspection.Schema)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _TimePoint_timestamp(ctx context.Context, field graphql.CollectedField, obj *TimePoint) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "TimePoint",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _TimePoint_timestamp(ctx context.Context, field graphql.CollectedField, obj *TimePoint) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "TimePoint",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Timestamp, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(time.Time)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _TimePoint_value(ctx context.Context, field graphql.CollectedField, obj *TimePoint) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "TimePoint",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _TimePoint_value(ctx context.Context, field graphql.CollectedField, obj *TimePoint) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "TimePoint",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Value, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(float64)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _TimePoint_meta(ctx context.Context, field graphql.CollectedField, obj *TimePoint) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "TimePoint",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _TimePoint_meta(ctx context.Context, field graphql.CollectedField, obj *TimePoint) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "TimePoint",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Meta, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.([]*Meta)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNMeta2ᚕᚖgithubᚗcomᚋiccoᚋchartsᚐMeta(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *User) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "User",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.ID, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_name(ctx context.Context, field graphql.CollectedField, obj *User) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "User",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _User_name(ctx context.Context, field graphql.CollectedField, obj *User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Name, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_role(ctx context.Context, field graphql.CollectedField, obj *User) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "User",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _User_role(ctx context.Context, field graphql.CollectedField, obj *User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Role, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_apikey(ctx context.Context, field graphql.CollectedField, obj *User) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "User",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _User_apikey(ctx context.Context, field graphql.CollectedField, obj *User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.APIKey, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_created(ctx context.Context, field graphql.CollectedField, obj *User) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "User",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _User_created(ctx context.Context, field graphql.CollectedField, obj *User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Created, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(time.Time)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_modified(ctx context.Context, field graphql.CollectedField, obj *User) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "User",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) _User_modified(ctx context.Context, field graphql.CollectedField, obj *User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Modified, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(time.Time)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Directive",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Directive",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Name, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Directive_description(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Directive",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) ___Directive_description(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Directive",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Description, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalOString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Directive_locations(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Directive",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) ___Directive_locations(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Directive",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Locations, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.([]string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalN__DirectiveLocation2ᚕstring(ctx, field.Selections, res)
+	fc.Result = res
+	return ec.marshalN__DirectiveLocation2ᚕstringᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Directive_args(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Directive",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) ___Directive_args(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Directive",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Args, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.([]introspection.InputValue)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx, field.Selections, res)
+	fc.Result = res
+	return ec.marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___EnumValue_name(ctx context.Context, field graphql.CollectedField, obj *introspection.EnumValue) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__EnumValue",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
-	})
-	if resTmp == nil {
-		if !ec.HasError(rctx) {
-			ec.Errorf(ctx, "must not be null")
+func (ec *executionContext) ___Directive_isRepeatable(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
 		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Directive",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsRepeatable, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
 		return graphql.Null
 	}
-	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) ___EnumValue_description(ctx context.Context, field graphql.CollectedField, obj *introspection.EnumValue) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__EnumValue",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Description, nil
-	})
 	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) ___EnumValue_isDeprecated(ctx context.Context, field graphql.CollectedField, obj *introspection.EnumValue) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__EnumValue",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
-	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.IsDeprecated(), nil
-	})
-	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(bool)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___EnumValue_deprecationReason(ctx context.Context, field graphql.CollectedField, obj *introspection.EnumValue) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__EnumValue",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) ___EnumValue_name(ctx context.Context, field graphql.CollectedField, obj *introspection.EnumValue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__EnumValue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.DeprecationReason(), nil
-	})
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
 
-func (ec *executionContext) ___Field_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Field) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Field",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Name, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Field_description(ctx context.Context, field graphql.CollectedField, obj *introspection.Field) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Field",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) ___EnumValue_description(ctx context.Context, field graphql.CollectedField, obj *introspection.EnumValue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__EnumValue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Description, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalOString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Field_args(ctx context.Context, field graphql.CollectedField, obj *introspection.Field) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Field",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) ___EnumValue_isDeprecated(ctx context.Context, field graphql.CollectedField, obj *introspection.EnumValue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__EnumValue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsDeprecated(), nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) ___EnumValue_deprecationReason(ctx context.Context, field graphql.CollectedField, obj *introspection.EnumValue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__EnumValue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DeprecationReason(), nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) ___Field_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Field) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Field",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) ___Field_description(ctx context.Context, field graphql.CollectedField, obj *introspection.Field) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Field",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalOString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) ___Field_args(ctx context.Context, field graphql.CollectedField, obj *introspection.Field) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Field",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Args, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.([]introspection.InputValue)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx, field.Selections, res)
+	fc.Result = res
+	return ec.marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Field_type(ctx context.Context, field graphql.CollectedField, obj *introspection.Field) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Field",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) ___Field_type(ctx context.Context, field graphql.CollectedField, obj *introspection.Field) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Field",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Type, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(*introspection.Type)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Field_isDeprecated(ctx context.Context, field graphql.CollectedField, obj *introspection.Field) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Field",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) ___Field_isDeprecated(ctx context.Context, field graphql.CollectedField, obj *introspection.Field) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Field",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.IsDeprecated(), nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(bool)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Field_deprecationReason(ctx context.Context, field graphql.CollectedField, obj *introspection.Field) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Field",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) ___Field_deprecationReason(ctx context.Context, field graphql.CollectedField, obj *introspection.Field) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Field",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.DeprecationReason(), nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.(*string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___InputValue_name(ctx context.Context, field graphql.CollectedField, obj *introspection.InputValue) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__InputValue",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) ___InputValue_name(ctx context.Context, field graphql.CollectedField, obj *introspection.InputValue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__InputValue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Name, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___InputValue_description(ctx context.Context, field graphql.CollectedField, obj *introspection.InputValue) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__InputValue",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) ___InputValue_description(ctx context.Context, field graphql.CollectedField, obj *introspection.InputValue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__InputValue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Description, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalOString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___InputValue_type(ctx context.Context, field graphql.CollectedField, obj *introspection.InputValue) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__InputValue",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) ___InputValue_type(ctx context.Context, field graphql.CollectedField, obj *introspection.InputValue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__InputValue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Type, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(*introspection.Type)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___InputValue_defaultValue(ctx context.Context, field graphql.CollectedField, obj *introspection.InputValue) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__InputValue",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
+func (ec *executionContext) ___InputValue_defaultValue(ctx context.Context, field graphql.CollectedField, obj *introspection.InputValue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__InputValue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.DefaultValue, nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.(*string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Schema_types(ctx context.Context, field graphql.CollectedField, obj *introspection.Schema) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Schema",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) ___Schema_types(ctx context.Context, field graphql.CollectedField, obj *introspection.Schema) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Schema",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Types(), nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.([]introspection.Type)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
+	fc.Result = res
+	return ec.marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Schema_queryType(ctx context.Context, field graphql.CollectedField, obj *introspection.Schema) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Schema",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) ___Schema_queryType(ctx context.Context, field graphql.CollectedField, obj *introspection.Schema) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Schema",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.QueryType(), nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(*introspection.Type)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Schema_mutationType(ctx context.Context, field graphql.CollectedField, obj *introspection.Schema) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Schema",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) ___Schema_mutationType(ctx context.Context, field graphql.CollectedField, obj *introspection.Schema) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Schema",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.MutationType(), nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.(*introspection.Type)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Schema_subscriptionType(ctx context.Context, field graphql.CollectedField, obj *introspection.Schema) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Schema",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) ___Schema_subscriptionType(ctx context.Context, field graphql.CollectedField, obj *introspection.Schema) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Schema",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.SubscriptionType(), nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.(*introspection.Type)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Schema_directives(ctx context.Context, field graphql.CollectedField, obj *introspection.Schema) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Schema",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) ___Schema_directives(ctx context.Context, field graphql.CollectedField, obj *introspection.Schema) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Schema",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Directives(), nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.([]introspection.Directive)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx, field.Selections, res)
+	fc.Result = res
+	return ec.marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirectiveᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Type_kind(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) ___Type_kind(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Kind(), nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
-		if !ec.HasError(rctx) {
+		if !graphql.HasFieldError(ctx, fc) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
 	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalN__TypeKind2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Type_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) ___Type_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Name(), nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.(*string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Type_description(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) ___Type_description(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Description(), nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.(string)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalOString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Type_fields(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) ___Type_fields(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
+
+	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
 	args, err := ec.field___Type_fields_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
-	rctx.Args = args
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Fields(args["includeDeprecated"].(bool)), nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.([]introspection.Field)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐField(ctx, field.Selections, res)
+	fc.Result = res
+	return ec.marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐFieldᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Type_interfaces(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) ___Type_interfaces(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Interfaces(), nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.([]introspection.Type)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
+	fc.Result = res
+	return ec.marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Type_possibleTypes(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) ___Type_possibleTypes(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.PossibleTypes(), nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.([]introspection.Type)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
+	fc.Result = res
+	return ec.marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Type_enumValues(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) ___Type_enumValues(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
+
+	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
 	args, err := ec.field___Type_enumValues_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
-	rctx.Args = args
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.EnumValues(args["includeDeprecated"].(bool)), nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.([]introspection.EnumValue)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValue(ctx, field.Selections, res)
+	fc.Result = res
+	return ec.marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Type_inputFields(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) ___Type_inputFields(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.InputFields(), nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.([]introspection.InputValue)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
-	return ec.marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx, field.Selections, res)
+	fc.Result = res
+	return ec.marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) graphql.Marshaler {
-	ctx = ec.Tracer.StartFieldExecution(ctx, field)
-	defer func() { ec.Tracer.EndFieldExecution(ctx) }()
-	rctx := &graphql.ResolverContext{
-		Object:   "__Type",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
+func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.CollectedField, obj *introspection.Type) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Type",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
 	}
-	ctx = graphql.WithResolverContext(ctx, rctx)
-	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
-	resTmp := ec.FieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.OfType(), nil
 	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
 	if resTmp == nil {
 		return graphql.Null
 	}
 	res := resTmp.(*introspection.Type)
-	rctx.Result = res
-	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	fc.Result = res
 	return ec.marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx, field.Selections, res)
 }
 
@@ -2289,20 +2819,27 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputMetaInput(ctx context.Context, v interface{}) (MetaInput, error) {
+func (ec *executionContext) unmarshalInputMetaInput(ctx context.Context, obj interface{}) (MetaInput, error) {
 	var it MetaInput
-	var asMap = v.(map[string]interface{})
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
 
 	for k, v := range asMap {
 		switch k {
 		case "key":
 			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
 			it.Key, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
 		case "value":
 			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("value"))
 			it.Value, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -2313,20 +2850,27 @@ func (ec *executionContext) unmarshalInputMetaInput(ctx context.Context, v inter
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputNewLineGraph(ctx context.Context, v interface{}) (NewLineGraph, error) {
+func (ec *executionContext) unmarshalInputNewLineGraph(ctx context.Context, obj interface{}) (NewLineGraph, error) {
 	var it NewLineGraph
-	var asMap = v.(map[string]interface{})
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
 
 	for k, v := range asMap {
 		switch k {
 		case "description":
 			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
 		case "data":
 			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("data"))
 			it.Data, err = ec.unmarshalNPairPointInput2ᚕᚖgithubᚗcomᚋiccoᚋchartsᚐPairPointInput(ctx, v)
 			if err != nil {
 				return it, err
@@ -2337,20 +2881,27 @@ func (ec *executionContext) unmarshalInputNewLineGraph(ctx context.Context, v in
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputNewPieGraph(ctx context.Context, v interface{}) (NewPieGraph, error) {
+func (ec *executionContext) unmarshalInputNewPieGraph(ctx context.Context, obj interface{}) (NewPieGraph, error) {
 	var it NewPieGraph
-	var asMap = v.(map[string]interface{})
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
 
 	for k, v := range asMap {
 		switch k {
 		case "description":
 			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
 		case "data":
 			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("data"))
 			it.Data, err = ec.unmarshalNPiePointInput2ᚕᚖgithubᚗcomᚋiccoᚋchartsᚐPiePointInput(ctx, v)
 			if err != nil {
 				return it, err
@@ -2361,20 +2912,27 @@ func (ec *executionContext) unmarshalInputNewPieGraph(ctx context.Context, v int
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputNewTimeseriesGraph(ctx context.Context, v interface{}) (NewTimeseriesGraph, error) {
+func (ec *executionContext) unmarshalInputNewTimeseriesGraph(ctx context.Context, obj interface{}) (NewTimeseriesGraph, error) {
 	var it NewTimeseriesGraph
-	var asMap = v.(map[string]interface{})
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
 
 	for k, v := range asMap {
 		switch k {
 		case "description":
 			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
 		case "data":
 			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("data"))
 			it.Data, err = ec.unmarshalNTimePointInput2ᚕᚖgithubᚗcomᚋiccoᚋchartsᚐTimePointInput(ctx, v)
 			if err != nil {
 				return it, err
@@ -2385,26 +2943,35 @@ func (ec *executionContext) unmarshalInputNewTimeseriesGraph(ctx context.Context
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputPairPointInput(ctx context.Context, v interface{}) (PairPointInput, error) {
+func (ec *executionContext) unmarshalInputPairPointInput(ctx context.Context, obj interface{}) (PairPointInput, error) {
 	var it PairPointInput
-	var asMap = v.(map[string]interface{})
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
 
 	for k, v := range asMap {
 		switch k {
 		case "x":
 			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("x"))
 			it.X, err = ec.unmarshalNFloat2float64(ctx, v)
 			if err != nil {
 				return it, err
 			}
 		case "y":
 			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("y"))
 			it.Y, err = ec.unmarshalNFloat2float64(ctx, v)
 			if err != nil {
 				return it, err
 			}
 		case "meta":
 			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("meta"))
 			it.Meta, err = ec.unmarshalOMetaInput2ᚕᚖgithubᚗcomᚋiccoᚋchartsᚐMetaInput(ctx, v)
 			if err != nil {
 				return it, err
@@ -2415,20 +2982,27 @@ func (ec *executionContext) unmarshalInputPairPointInput(ctx context.Context, v 
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputPiePointInput(ctx context.Context, v interface{}) (PiePointInput, error) {
+func (ec *executionContext) unmarshalInputPiePointInput(ctx context.Context, obj interface{}) (PiePointInput, error) {
 	var it PiePointInput
-	var asMap = v.(map[string]interface{})
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
 
 	for k, v := range asMap {
 		switch k {
 		case "percent":
 			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("percent"))
 			it.Percent, err = ec.unmarshalNFloat2float64(ctx, v)
 			if err != nil {
 				return it, err
 			}
 		case "meta":
 			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("meta"))
 			it.Meta, err = ec.unmarshalOMetaInput2ᚕᚖgithubᚗcomᚋiccoᚋchartsᚐMetaInput(ctx, v)
 			if err != nil {
 				return it, err
@@ -2439,26 +3013,35 @@ func (ec *executionContext) unmarshalInputPiePointInput(ctx context.Context, v i
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputTimePointInput(ctx context.Context, v interface{}) (TimePointInput, error) {
+func (ec *executionContext) unmarshalInputTimePointInput(ctx context.Context, obj interface{}) (TimePointInput, error) {
 	var it TimePointInput
-	var asMap = v.(map[string]interface{})
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
 
 	for k, v := range asMap {
 		switch k {
 		case "timestamp":
 			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timestamp"))
 			it.Timestamp, err = ec.unmarshalNTime2timeᚐTime(ctx, v)
 			if err != nil {
 				return it, err
 			}
 		case "value":
 			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("value"))
 			it.Value, err = ec.unmarshalNFloat2float64(ctx, v)
 			if err != nil {
 				return it, err
 			}
 		case "meta":
 			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("meta"))
 			it.Meta, err = ec.unmarshalOMetaInput2ᚕᚖgithubᚗcomᚋiccoᚋchartsᚐMetaInput(ctx, v)
 			if err != nil {
 				return it, err
@@ -2473,21 +3056,30 @@ func (ec *executionContext) unmarshalInputTimePointInput(ctx context.Context, v 
 
 // region    ************************** interface.gotpl ***************************
 
-func (ec *executionContext) _DataPoint(ctx context.Context, sel ast.SelectionSet, obj *DataPoint) graphql.Marshaler {
-	switch obj := (*obj).(type) {
+func (ec *executionContext) _DataPoint(ctx context.Context, sel ast.SelectionSet, obj DataPoint) graphql.Marshaler {
+	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
 	case PairPoint:
 		return ec._PairPoint(ctx, sel, &obj)
 	case *PairPoint:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._PairPoint(ctx, sel, obj)
 	case PiePoint:
 		return ec._PiePoint(ctx, sel, &obj)
 	case *PiePoint:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._PiePoint(ctx, sel, obj)
 	case TimePoint:
 		return ec._TimePoint(ctx, sel, &obj)
 	case *TimePoint:
+		if obj == nil {
+			return graphql.Null
+		}
 		return ec._TimePoint(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
@@ -2501,7 +3093,7 @@ func (ec *executionContext) _DataPoint(ctx context.Context, sel ast.SelectionSet
 var graphImplementors = []string{"Graph"}
 
 func (ec *executionContext) _Graph(ctx context.Context, sel ast.SelectionSet, obj *Graph) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.RequestContext, sel, graphImplementors)
+	fields := graphql.CollectFields(ec.OperationContext, sel, graphImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -2569,7 +3161,7 @@ func (ec *executionContext) _Graph(ctx context.Context, sel ast.SelectionSet, ob
 var metaImplementors = []string{"Meta"}
 
 func (ec *executionContext) _Meta(ctx context.Context, sel ast.SelectionSet, obj *Meta) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.RequestContext, sel, metaImplementors)
+	fields := graphql.CollectFields(ec.OperationContext, sel, metaImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -2601,9 +3193,9 @@ func (ec *executionContext) _Meta(ctx context.Context, sel ast.SelectionSet, obj
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.RequestContext, sel, mutationImplementors)
+	fields := graphql.CollectFields(ec.OperationContext, sel, mutationImplementors)
 
-	ctx = graphql.WithResolverContext(ctx, &graphql.ResolverContext{
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
 		Object: "Mutation",
 	})
 
@@ -2642,7 +3234,7 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 var pairPointImplementors = []string{"PairPoint", "DataPoint"}
 
 func (ec *executionContext) _PairPoint(ctx context.Context, sel ast.SelectionSet, obj *PairPoint) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.RequestContext, sel, pairPointImplementors)
+	fields := graphql.CollectFields(ec.OperationContext, sel, pairPointImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -2679,7 +3271,7 @@ func (ec *executionContext) _PairPoint(ctx context.Context, sel ast.SelectionSet
 var piePointImplementors = []string{"PiePoint", "DataPoint"}
 
 func (ec *executionContext) _PiePoint(ctx context.Context, sel ast.SelectionSet, obj *PiePoint) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.RequestContext, sel, piePointImplementors)
+	fields := graphql.CollectFields(ec.OperationContext, sel, piePointImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -2711,9 +3303,9 @@ func (ec *executionContext) _PiePoint(ctx context.Context, sel ast.SelectionSet,
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.RequestContext, sel, queryImplementors)
+	fields := graphql.CollectFields(ec.OperationContext, sel, queryImplementors)
 
-	ctx = graphql.WithResolverContext(ctx, &graphql.ResolverContext{
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
 		Object: "Query",
 	})
 
@@ -2752,7 +3344,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 var timePointImplementors = []string{"TimePoint", "DataPoint"}
 
 func (ec *executionContext) _TimePoint(ctx context.Context, sel ast.SelectionSet, obj *TimePoint) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.RequestContext, sel, timePointImplementors)
+	fields := graphql.CollectFields(ec.OperationContext, sel, timePointImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -2789,7 +3381,7 @@ func (ec *executionContext) _TimePoint(ctx context.Context, sel ast.SelectionSet
 var userImplementors = []string{"User"}
 
 func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *User) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.RequestContext, sel, userImplementors)
+	fields := graphql.CollectFields(ec.OperationContext, sel, userImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -2841,7 +3433,7 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 var __DirectiveImplementors = []string{"__Directive"}
 
 func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionSet, obj *introspection.Directive) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.RequestContext, sel, __DirectiveImplementors)
+	fields := graphql.CollectFields(ec.OperationContext, sel, __DirectiveImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -2866,6 +3458,11 @@ func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionS
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "isRepeatable":
+			out.Values[i] = ec.___Directive_isRepeatable(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2880,7 +3477,7 @@ func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionS
 var __EnumValueImplementors = []string{"__EnumValue"}
 
 func (ec *executionContext) ___EnumValue(ctx context.Context, sel ast.SelectionSet, obj *introspection.EnumValue) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.RequestContext, sel, __EnumValueImplementors)
+	fields := graphql.CollectFields(ec.OperationContext, sel, __EnumValueImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -2916,7 +3513,7 @@ func (ec *executionContext) ___EnumValue(ctx context.Context, sel ast.SelectionS
 var __FieldImplementors = []string{"__Field"}
 
 func (ec *executionContext) ___Field(ctx context.Context, sel ast.SelectionSet, obj *introspection.Field) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.RequestContext, sel, __FieldImplementors)
+	fields := graphql.CollectFields(ec.OperationContext, sel, __FieldImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -2962,7 +3559,7 @@ func (ec *executionContext) ___Field(ctx context.Context, sel ast.SelectionSet, 
 var __InputValueImplementors = []string{"__InputValue"}
 
 func (ec *executionContext) ___InputValue(ctx context.Context, sel ast.SelectionSet, obj *introspection.InputValue) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.RequestContext, sel, __InputValueImplementors)
+	fields := graphql.CollectFields(ec.OperationContext, sel, __InputValueImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -2998,7 +3595,7 @@ func (ec *executionContext) ___InputValue(ctx context.Context, sel ast.Selection
 var __SchemaImplementors = []string{"__Schema"}
 
 func (ec *executionContext) ___Schema(ctx context.Context, sel ast.SelectionSet, obj *introspection.Schema) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.RequestContext, sel, __SchemaImplementors)
+	fields := graphql.CollectFields(ec.OperationContext, sel, __SchemaImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -3039,7 +3636,7 @@ func (ec *executionContext) ___Schema(ctx context.Context, sel ast.SelectionSet,
 var __TypeImplementors = []string{"__Type"}
 
 func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, obj *introspection.Type) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.RequestContext, sel, __TypeImplementors)
+	fields := graphql.CollectFields(ec.OperationContext, sel, __TypeImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -3084,13 +3681,14 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 // region    ***************************** type.gotpl *****************************
 
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
-	return graphql.UnmarshalBoolean(v)
+	res, err := graphql.UnmarshalBoolean(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
 	res := graphql.MarshalBoolean(v)
 	if res == graphql.Null {
-		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 	}
@@ -3098,10 +3696,16 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 }
 
 func (ec *executionContext) marshalNDataPoint2githubᚗcomᚋiccoᚋchartsᚐDataPoint(ctx context.Context, sel ast.SelectionSet, v DataPoint) graphql.Marshaler {
-	return ec._DataPoint(ctx, sel, &v)
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._DataPoint(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNDataPoint2ᚕgithubᚗcomᚋiccoᚋchartsᚐDataPoint(ctx context.Context, sel ast.SelectionSet, v []DataPoint) graphql.Marshaler {
+func (ec *executionContext) marshalNDataPoint2ᚕgithubᚗcomᚋiccoᚋchartsᚐDataPointᚄ(ctx context.Context, sel ast.SelectionSet, v []DataPoint) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -3110,11 +3714,11 @@ func (ec *executionContext) marshalNDataPoint2ᚕgithubᚗcomᚋiccoᚋchartsᚐ
 	}
 	for i := range v {
 		i := i
-		rctx := &graphql.ResolverContext{
+		fc := &graphql.FieldContext{
 			Index:  &i,
 			Result: &v[i],
 		}
-		ctx := graphql.WithResolverContext(ctx, rctx)
+		ctx := graphql.WithFieldContext(ctx, fc)
 		f := func(i int) {
 			defer func() {
 				if r := recover(); r != nil {
@@ -3135,17 +3739,25 @@ func (ec *executionContext) marshalNDataPoint2ᚕgithubᚗcomᚋiccoᚋchartsᚐ
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
-	return graphql.UnmarshalFloat(v)
+	res, err := graphql.UnmarshalFloat(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
 	res := graphql.MarshalFloat(v)
 	if res == graphql.Null {
-		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 	}
@@ -3158,7 +3770,7 @@ func (ec *executionContext) marshalNGraph2githubᚗcomᚋiccoᚋchartsᚐGraph(c
 
 func (ec *executionContext) marshalNGraph2ᚖgithubᚗcomᚋiccoᚋchartsᚐGraph(ctx context.Context, sel ast.SelectionSet, v *Graph) graphql.Marshaler {
 	if v == nil {
-		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
@@ -3168,7 +3780,8 @@ func (ec *executionContext) marshalNGraph2ᚖgithubᚗcomᚋiccoᚋchartsᚐGrap
 
 func (ec *executionContext) unmarshalNGraphType2githubᚗcomᚋiccoᚋchartsᚐGraphType(ctx context.Context, v interface{}) (GraphType, error) {
 	var res GraphType
-	return res, res.UnmarshalGQL(v)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNGraphType2githubᚗcomᚋiccoᚋchartsᚐGraphType(ctx context.Context, sel ast.SelectionSet, v GraphType) graphql.Marshaler {
@@ -3176,13 +3789,14 @@ func (ec *executionContext) marshalNGraphType2githubᚗcomᚋiccoᚋchartsᚐGra
 }
 
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
-	return graphql.UnmarshalID(v)
+	res, err := graphql.UnmarshalID(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalID(v)
 	if res == graphql.Null {
-		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 	}
@@ -3198,11 +3812,11 @@ func (ec *executionContext) marshalNMeta2ᚕᚖgithubᚗcomᚋiccoᚋchartsᚐMe
 	}
 	for i := range v {
 		i := i
-		rctx := &graphql.ResolverContext{
+		fc := &graphql.FieldContext{
 			Index:  &i,
 			Result: &v[i],
 		}
-		ctx := graphql.WithResolverContext(ctx, rctx)
+		ctx := graphql.WithFieldContext(ctx, fc)
 		f := func(i int) {
 			defer func() {
 				if r := recover(); r != nil {
@@ -3223,19 +3837,23 @@ func (ec *executionContext) marshalNMeta2ᚕᚖgithubᚗcomᚋiccoᚋchartsᚐMe
 
 	}
 	wg.Wait()
+
 	return ret
 }
 
 func (ec *executionContext) unmarshalNNewLineGraph2githubᚗcomᚋiccoᚋchartsᚐNewLineGraph(ctx context.Context, v interface{}) (NewLineGraph, error) {
-	return ec.unmarshalInputNewLineGraph(ctx, v)
+	res, err := ec.unmarshalInputNewLineGraph(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNNewPieGraph2githubᚗcomᚋiccoᚋchartsᚐNewPieGraph(ctx context.Context, v interface{}) (NewPieGraph, error) {
-	return ec.unmarshalInputNewPieGraph(ctx, v)
+	res, err := ec.unmarshalInputNewPieGraph(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNNewTimeseriesGraph2githubᚗcomᚋiccoᚋchartsᚐNewTimeseriesGraph(ctx context.Context, v interface{}) (NewTimeseriesGraph, error) {
-	return ec.unmarshalInputNewTimeseriesGraph(ctx, v)
+	res, err := ec.unmarshalInputNewTimeseriesGraph(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNPairPointInput2ᚕᚖgithubᚗcomᚋiccoᚋchartsᚐPairPointInput(ctx context.Context, v interface{}) ([]*PairPointInput, error) {
@@ -3250,6 +3868,7 @@ func (ec *executionContext) unmarshalNPairPointInput2ᚕᚖgithubᚗcomᚋicco�
 	var err error
 	res := make([]*PairPointInput, len(vSlice))
 	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		res[i], err = ec.unmarshalOPairPointInput2ᚖgithubᚗcomᚋiccoᚋchartsᚐPairPointInput(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
@@ -3270,6 +3889,7 @@ func (ec *executionContext) unmarshalNPiePointInput2ᚕᚖgithubᚗcomᚋiccoᚋ
 	var err error
 	res := make([]*PiePointInput, len(vSlice))
 	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		res[i], err = ec.unmarshalOPiePointInput2ᚖgithubᚗcomᚋiccoᚋchartsᚐPiePointInput(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
@@ -3279,13 +3899,14 @@ func (ec *executionContext) unmarshalNPiePointInput2ᚕᚖgithubᚗcomᚋiccoᚋ
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
-	return graphql.UnmarshalString(v)
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
-		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 	}
@@ -3293,13 +3914,14 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 }
 
 func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {
-	return graphql.UnmarshalTime(v)
+	res, err := graphql.UnmarshalTime(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel ast.SelectionSet, v time.Time) graphql.Marshaler {
 	res := graphql.MarshalTime(v)
 	if res == graphql.Null {
-		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 	}
@@ -3318,6 +3940,7 @@ func (ec *executionContext) unmarshalNTimePointInput2ᚕᚖgithubᚗcomᚋicco�
 	var err error
 	res := make([]*TimePointInput, len(vSlice))
 	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		res[i], err = ec.unmarshalOTimePointInput2ᚖgithubᚗcomᚋiccoᚋchartsᚐTimePointInput(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
@@ -3330,7 +3953,7 @@ func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlge
 	return ec.___Directive(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v []introspection.Directive) graphql.Marshaler {
+func (ec *executionContext) marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirectiveᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.Directive) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -3339,11 +3962,11 @@ func (ec *executionContext) marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgq
 	}
 	for i := range v {
 		i := i
-		rctx := &graphql.ResolverContext{
+		fc := &graphql.FieldContext{
 			Index:  &i,
 			Result: &v[i],
 		}
-		ctx := graphql.WithResolverContext(ctx, rctx)
+		ctx := graphql.WithFieldContext(ctx, fc)
 		f := func(i int) {
 			defer func() {
 				if r := recover(); r != nil {
@@ -3364,24 +3987,32 @@ func (ec *executionContext) marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgq
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
 func (ec *executionContext) unmarshalN__DirectiveLocation2string(ctx context.Context, v interface{}) (string, error) {
-	return graphql.UnmarshalString(v)
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalN__DirectiveLocation2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
-		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 	}
 	return res
 }
 
-func (ec *executionContext) unmarshalN__DirectiveLocation2ᚕstring(ctx context.Context, v interface{}) ([]string, error) {
+func (ec *executionContext) unmarshalN__DirectiveLocation2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
 	var vSlice []interface{}
 	if v != nil {
 		if tmp1, ok := v.([]interface{}); ok {
@@ -3393,6 +4024,7 @@ func (ec *executionContext) unmarshalN__DirectiveLocation2ᚕstring(ctx context.
 	var err error
 	res := make([]string, len(vSlice))
 	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		res[i], err = ec.unmarshalN__DirectiveLocation2string(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
@@ -3401,7 +4033,7 @@ func (ec *executionContext) unmarshalN__DirectiveLocation2ᚕstring(ctx context.
 	return res, nil
 }
 
-func (ec *executionContext) marshalN__DirectiveLocation2ᚕstring(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+func (ec *executionContext) marshalN__DirectiveLocation2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -3410,11 +4042,11 @@ func (ec *executionContext) marshalN__DirectiveLocation2ᚕstring(ctx context.Co
 	}
 	for i := range v {
 		i := i
-		rctx := &graphql.ResolverContext{
+		fc := &graphql.FieldContext{
 			Index:  &i,
 			Result: &v[i],
 		}
-		ctx := graphql.WithResolverContext(ctx, rctx)
+		ctx := graphql.WithFieldContext(ctx, fc)
 		f := func(i int) {
 			defer func() {
 				if r := recover(); r != nil {
@@ -3435,6 +4067,13 @@ func (ec *executionContext) marshalN__DirectiveLocation2ᚕstring(ctx context.Co
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -3450,7 +4089,7 @@ func (ec *executionContext) marshalN__InputValue2githubᚗcomᚋ99designsᚋgqlg
 	return ec.___InputValue(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx context.Context, sel ast.SelectionSet, v []introspection.InputValue) graphql.Marshaler {
+func (ec *executionContext) marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.InputValue) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -3459,11 +4098,11 @@ func (ec *executionContext) marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋg
 	}
 	for i := range v {
 		i := i
-		rctx := &graphql.ResolverContext{
+		fc := &graphql.FieldContext{
 			Index:  &i,
 			Result: &v[i],
 		}
-		ctx := graphql.WithResolverContext(ctx, rctx)
+		ctx := graphql.WithFieldContext(ctx, fc)
 		f := func(i int) {
 			defer func() {
 				if r := recover(); r != nil {
@@ -3484,6 +4123,13 @@ func (ec *executionContext) marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋg
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -3491,7 +4137,7 @@ func (ec *executionContext) marshalN__Type2githubᚗcomᚋ99designsᚋgqlgenᚋg
 	return ec.___Type(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx context.Context, sel ast.SelectionSet, v []introspection.Type) graphql.Marshaler {
+func (ec *executionContext) marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.Type) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -3500,11 +4146,11 @@ func (ec *executionContext) marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgen�
 	}
 	for i := range v {
 		i := i
-		rctx := &graphql.ResolverContext{
+		fc := &graphql.FieldContext{
 			Index:  &i,
 			Result: &v[i],
 		}
-		ctx := graphql.WithResolverContext(ctx, rctx)
+		ctx := graphql.WithFieldContext(ctx, fc)
 		f := func(i int) {
 			defer func() {
 				if r := recover(); r != nil {
@@ -3525,12 +4171,19 @@ func (ec *executionContext) marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgen�
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
 func (ec *executionContext) marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx context.Context, sel ast.SelectionSet, v *introspection.Type) graphql.Marshaler {
 	if v == nil {
-		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
@@ -3539,13 +4192,14 @@ func (ec *executionContext) marshalN__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgen�
 }
 
 func (ec *executionContext) unmarshalN__TypeKind2string(ctx context.Context, v interface{}) (string, error) {
-	return graphql.UnmarshalString(v)
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalString(v)
 	if res == graphql.Null {
-		if !ec.HasError(graphql.GetResolverContext(ctx)) {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 	}
@@ -3553,7 +4207,8 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
-	return graphql.UnmarshalBoolean(v)
+	res, err := graphql.UnmarshalBoolean(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
@@ -3564,19 +4219,15 @@ func (ec *executionContext) unmarshalOBoolean2ᚖbool(ctx context.Context, v int
 	if v == nil {
 		return nil, nil
 	}
-	res, err := ec.unmarshalOBoolean2bool(ctx, v)
-	return &res, err
+	res, err := graphql.UnmarshalBoolean(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast.SelectionSet, v *bool) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	return ec.marshalOBoolean2bool(ctx, sel, *v)
-}
-
-func (ec *executionContext) marshalOGraph2githubᚗcomᚋiccoᚋchartsᚐGraph(ctx context.Context, sel ast.SelectionSet, v Graph) graphql.Marshaler {
-	return ec._Graph(ctx, sel, &v)
+	return graphql.MarshalBoolean(*v)
 }
 
 func (ec *executionContext) marshalOGraph2ᚖgithubᚗcomᚋiccoᚋchartsᚐGraph(ctx context.Context, sel ast.SelectionSet, v *Graph) graphql.Marshaler {
@@ -3586,10 +4237,6 @@ func (ec *executionContext) marshalOGraph2ᚖgithubᚗcomᚋiccoᚋchartsᚐGrap
 	return ec._Graph(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOMeta2githubᚗcomᚋiccoᚋchartsᚐMeta(ctx context.Context, sel ast.SelectionSet, v Meta) graphql.Marshaler {
-	return ec._Meta(ctx, sel, &v)
-}
-
 func (ec *executionContext) marshalOMeta2ᚖgithubᚗcomᚋiccoᚋchartsᚐMeta(ctx context.Context, sel ast.SelectionSet, v *Meta) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -3597,11 +4244,10 @@ func (ec *executionContext) marshalOMeta2ᚖgithubᚗcomᚋiccoᚋchartsᚐMeta(
 	return ec._Meta(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOMetaInput2githubᚗcomᚋiccoᚋchartsᚐMetaInput(ctx context.Context, v interface{}) (MetaInput, error) {
-	return ec.unmarshalInputMetaInput(ctx, v)
-}
-
 func (ec *executionContext) unmarshalOMetaInput2ᚕᚖgithubᚗcomᚋiccoᚋchartsᚐMetaInput(ctx context.Context, v interface{}) ([]*MetaInput, error) {
+	if v == nil {
+		return nil, nil
+	}
 	var vSlice []interface{}
 	if v != nil {
 		if tmp1, ok := v.([]interface{}); ok {
@@ -3613,6 +4259,7 @@ func (ec *executionContext) unmarshalOMetaInput2ᚕᚖgithubᚗcomᚋiccoᚋchar
 	var err error
 	res := make([]*MetaInput, len(vSlice))
 	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
 		res[i], err = ec.unmarshalOMetaInput2ᚖgithubᚗcomᚋiccoᚋchartsᚐMetaInput(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
@@ -3625,36 +4272,29 @@ func (ec *executionContext) unmarshalOMetaInput2ᚖgithubᚗcomᚋiccoᚋcharts�
 	if v == nil {
 		return nil, nil
 	}
-	res, err := ec.unmarshalOMetaInput2githubᚗcomᚋiccoᚋchartsᚐMetaInput(ctx, v)
-	return &res, err
-}
-
-func (ec *executionContext) unmarshalOPairPointInput2githubᚗcomᚋiccoᚋchartsᚐPairPointInput(ctx context.Context, v interface{}) (PairPointInput, error) {
-	return ec.unmarshalInputPairPointInput(ctx, v)
+	res, err := ec.unmarshalInputMetaInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOPairPointInput2ᚖgithubᚗcomᚋiccoᚋchartsᚐPairPointInput(ctx context.Context, v interface{}) (*PairPointInput, error) {
 	if v == nil {
 		return nil, nil
 	}
-	res, err := ec.unmarshalOPairPointInput2githubᚗcomᚋiccoᚋchartsᚐPairPointInput(ctx, v)
-	return &res, err
-}
-
-func (ec *executionContext) unmarshalOPiePointInput2githubᚗcomᚋiccoᚋchartsᚐPiePointInput(ctx context.Context, v interface{}) (PiePointInput, error) {
-	return ec.unmarshalInputPiePointInput(ctx, v)
+	res, err := ec.unmarshalInputPairPointInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOPiePointInput2ᚖgithubᚗcomᚋiccoᚋchartsᚐPiePointInput(ctx context.Context, v interface{}) (*PiePointInput, error) {
 	if v == nil {
 		return nil, nil
 	}
-	res, err := ec.unmarshalOPiePointInput2githubᚗcomᚋiccoᚋchartsᚐPiePointInput(ctx, v)
-	return &res, err
+	res, err := ec.unmarshalInputPiePointInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
-	return graphql.UnmarshalString(v)
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
@@ -3665,31 +4305,23 @@ func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v in
 	if v == nil {
 		return nil, nil
 	}
-	res, err := ec.unmarshalOString2string(ctx, v)
-	return &res, err
+	res, err := graphql.UnmarshalString(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	return ec.marshalOString2string(ctx, sel, *v)
-}
-
-func (ec *executionContext) unmarshalOTimePointInput2githubᚗcomᚋiccoᚋchartsᚐTimePointInput(ctx context.Context, v interface{}) (TimePointInput, error) {
-	return ec.unmarshalInputTimePointInput(ctx, v)
+	return graphql.MarshalString(*v)
 }
 
 func (ec *executionContext) unmarshalOTimePointInput2ᚖgithubᚗcomᚋiccoᚋchartsᚐTimePointInput(ctx context.Context, v interface{}) (*TimePointInput, error) {
 	if v == nil {
 		return nil, nil
 	}
-	res, err := ec.unmarshalOTimePointInput2githubᚗcomᚋiccoᚋchartsᚐTimePointInput(ctx, v)
-	return &res, err
-}
-
-func (ec *executionContext) marshalOUser2githubᚗcomᚋiccoᚋchartsᚐUser(ctx context.Context, sel ast.SelectionSet, v User) graphql.Marshaler {
-	return ec._User(ctx, sel, &v)
+	res, err := ec.unmarshalInputTimePointInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋiccoᚋchartsᚐUser(ctx context.Context, sel ast.SelectionSet, v *User) graphql.Marshaler {
@@ -3699,7 +4331,7 @@ func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋiccoᚋchartsᚐUser(
 	return ec._User(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValue(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {
+func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -3711,11 +4343,11 @@ func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgq
 	}
 	for i := range v {
 		i := i
-		rctx := &graphql.ResolverContext{
+		fc := &graphql.FieldContext{
 			Index:  &i,
 			Result: &v[i],
 		}
-		ctx := graphql.WithResolverContext(ctx, rctx)
+		ctx := graphql.WithFieldContext(ctx, fc)
 		f := func(i int) {
 			defer func() {
 				if r := recover(); r != nil {
@@ -3736,10 +4368,17 @@ func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgq
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
-func (ec *executionContext) marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐField(ctx context.Context, sel ast.SelectionSet, v []introspection.Field) graphql.Marshaler {
+func (ec *executionContext) marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐFieldᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.Field) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -3751,11 +4390,11 @@ func (ec *executionContext) marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgen
 	}
 	for i := range v {
 		i := i
-		rctx := &graphql.ResolverContext{
+		fc := &graphql.FieldContext{
 			Index:  &i,
 			Result: &v[i],
 		}
-		ctx := graphql.WithResolverContext(ctx, rctx)
+		ctx := graphql.WithFieldContext(ctx, fc)
 		f := func(i int) {
 			defer func() {
 				if r := recover(); r != nil {
@@ -3776,10 +4415,17 @@ func (ec *executionContext) marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgen
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
-func (ec *executionContext) marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValue(ctx context.Context, sel ast.SelectionSet, v []introspection.InputValue) graphql.Marshaler {
+func (ec *executionContext) marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.InputValue) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -3791,11 +4437,11 @@ func (ec *executionContext) marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋg
 	}
 	for i := range v {
 		i := i
-		rctx := &graphql.ResolverContext{
+		fc := &graphql.FieldContext{
 			Index:  &i,
 			Result: &v[i],
 		}
-		ctx := graphql.WithResolverContext(ctx, rctx)
+		ctx := graphql.WithFieldContext(ctx, fc)
 		f := func(i int) {
 			defer func() {
 				if r := recover(); r != nil {
@@ -3816,11 +4462,14 @@ func (ec *executionContext) marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋg
 
 	}
 	wg.Wait()
-	return ret
-}
 
-func (ec *executionContext) marshalO__Schema2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx context.Context, sel ast.SelectionSet, v introspection.Schema) graphql.Marshaler {
-	return ec.___Schema(ctx, sel, &v)
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx context.Context, sel ast.SelectionSet, v *introspection.Schema) graphql.Marshaler {
@@ -3830,11 +4479,7 @@ func (ec *executionContext) marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlge
 	return ec.___Schema(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalO__Type2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx context.Context, sel ast.SelectionSet, v introspection.Type) graphql.Marshaler {
-	return ec.___Type(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐType(ctx context.Context, sel ast.SelectionSet, v []introspection.Type) graphql.Marshaler {
+func (ec *executionContext) marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.Type) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -3846,11 +4491,11 @@ func (ec *executionContext) marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgen�
 	}
 	for i := range v {
 		i := i
-		rctx := &graphql.ResolverContext{
+		fc := &graphql.FieldContext{
 			Index:  &i,
 			Result: &v[i],
 		}
-		ctx := graphql.WithResolverContext(ctx, rctx)
+		ctx := graphql.WithFieldContext(ctx, fc)
 		f := func(i int) {
 			defer func() {
 				if r := recover(); r != nil {
@@ -3871,6 +4516,13 @@ func (ec *executionContext) marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgen�
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
