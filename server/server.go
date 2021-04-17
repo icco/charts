@@ -7,18 +7,23 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/monitoredresource"
 	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
-	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler/apollotracing"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/handler"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/icco/charts"
 	"github.com/icco/gutil/logging"
+	"github.com/vektah/gqlparser/gqlerror"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
@@ -84,6 +89,38 @@ func main() {
 			DefaultSampler: trace.AlwaysSample(),
 		})
 	}
+
+	gh := handler.New(charts.NewExecutableSchema(charts.New()))
+	gh.AddTransport(transport.Websocket{KeepAlivePingInterval: 10 * time.Second})
+	gh.AddTransport(transport.Options{})
+	gh.AddTransport(transport.GET{})
+	gh.AddTransport(transport.POST{})
+	gh.AddTransport(transport.MultipartForm{})
+	gh.Use(apollotracing.Tracer{})
+	gh.SetQueryCache(lru.New(1000))
+	gh.Use(extension.Introspection{})
+
+	gh.SetErrorPresenter(func(ctx context.Context, e error) *gqlerror.Error {
+		err := gql.DefaultErrorPresenter(ctx, e)
+
+		log.Warnw("graphql request error", zap.Error(e))
+		if strings.Contains(e.Error(), "forbidden") {
+			return gqlerror.Errorf("forbidden: not a valid user")
+		}
+
+		return err
+	})
+	gh.SetRecoverFunc(func(ctx context.Context, err interface{}) error {
+		if e, ok := err.(error); !ok {
+			log.Errorw("graphql fatal request error", "error", err)
+		} else {
+			log.Errorw("graphql fatal request error", zap.Error(e))
+		}
+
+		return fmt.Errorf("Internal server error!")
+	})
+
+	gh.AroundResponses(GqlLoggingMiddleware)
 
 	isDev := os.Getenv("NAT_ENV") != "production"
 
@@ -161,36 +198,7 @@ func main() {
 		log.Fatalw("Failed to register ochttp.DefaultServerViews")
 	}
 
-	log.Fatalw(http.ListenAndServe(":"+port, h))
-}
-
-func buildGraphQLHandler() http.HandlerFunc {
-	return handler.GraphQL(
-		charts.NewExecutableSchema(charts.New()),
-		handler.RecoverFunc(func(ctx context.Context, intErr interface{}) error {
-			err, ok := intErr.(error)
-			if ok {
-				log.Errorw("Error seen during graphql", zap.Error(err))
-			}
-			return fmt.Errorf("fatal message seen when processing request")
-		}),
-		handler.CacheSize(512),
-		handler.RequestMiddleware(func(ctx context.Context, next func(ctx context.Context) []byte) []byte {
-			rctx := graphql.GetRequestContext(ctx)
-
-			// We do this because RequestContext has fields that can't be easily
-			// serialized in json, and we don't care about them.
-			subsetContext := map[string]interface{}{
-				"query":      rctx.RawQuery,
-				"variables":  rctx.Variables,
-				"extensions": rctx.Extensions,
-			}
-
-			log.Debugw("request gql", "gql", subsetContext)
-
-			return next(ctx)
-		}),
-	).Use(apollotracing.Tracer{})
+	log.Fatal(http.ListenAndServe(":"+port, h))
 }
 
 func renderGraphHandler(w http.ResponseWriter, r *http.Request) {
@@ -223,4 +231,22 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 	Renderer.JSON(w, http.StatusNotFound, map[string]string{
 		"error": "404: This page could not be found",
 	})
+}
+
+// GqlLoggingMiddleware is a middleware for gqlgen that logs all gql requests to debug.
+func GqlLoggingMiddleware(ctx context.Context, next gql.ResponseHandler) *gql.Response {
+	rctx := gql.GetOperationContext(ctx)
+
+	// We do this because RequestContext has fields that can't be easily
+	// serialized in json, and we don't care about them.
+	subsetContext := map[string]interface{}{
+		"query":     rctx.RawQuery,
+		"variables": rctx.Variables,
+		"name":      rctx.OperationName,
+		"stats":     rctx.Stats,
+	}
+
+	log.Debugw("request gql", "gql", subsetContext)
+
+	return next(ctx)
 }

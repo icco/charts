@@ -17,11 +17,12 @@ require (
 	github.com/go-chi/cors v1.2.0
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/uuid v1.2.0
-	github.com/hashicorp/golang-lru v0.5.4 // indirect
+	github.com/hashicorp/golang-lru v0.5.4
 	github.com/icco/gutil v0.0.0-20210413234538-3617c9b534ad
 	github.com/lib/pq v1.10.0
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/opencensus-integrations/ocsql v0.1.7
+	github.com/vektah/gqlparser v1.3.1
 	github.com/vektah/gqlparser/v2 v2.2.0
 	github.com/wcharczuk/go-chart v2.0.1+incompatible
 	go.opencensus.io v0.23.0
