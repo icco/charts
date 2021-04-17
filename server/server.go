@@ -45,8 +45,7 @@ var (
 	})
 
 	dbURL = os.Getenv("DATABASE_URL")
-
-	log = logging.Must(logging.NewLogger(charts.Service))
+	log   = logging.Must(logging.NewLogger(charts.Service))
 )
 
 func main() {
