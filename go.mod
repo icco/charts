@@ -33,11 +33,11 @@ require (
 	github.com/wcharczuk/go-chart v2.0.1+incompatible
 	go.opencensus.io v0.23.0
 	golang.org/x/image v0.0.0-20210220032944-ac19c3e999fb // indirect
-	golang.org/x/net v0.0.0-20210414194228-064579744ee0 // indirect
+	golang.org/x/net v0.0.0-20210415231046-e915ea6b2b7d // indirect
 	golang.org/x/oauth2 v0.0.0-20210413134643-5e61552d6c78 // indirect
 	golang.org/x/sys v0.0.0-20210415045647-66c3f260301c // indirect
 	google.golang.org/api v0.44.0 // indirect
-	google.golang.org/genproto v0.0.0-20210415145412-64678f1ae2d5 // indirect
+	google.golang.org/genproto v0.0.0-20210416161957-9910b6c460de // indirect
 	google.golang.org/grpc v1.37.0 // indirect
 	gopkg.in/unrolled/render.v1 v1.0.0
 	gopkg.in/unrolled/secure.v1 v1.0.0
