@@ -7,5 +7,5 @@ const (
 )
 
 var (
-	log = logging.Must(logging.NewLogger(charts.Service))
+	log = logging.Must(logging.NewLogger(Service))
 )
