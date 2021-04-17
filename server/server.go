@@ -13,14 +13,16 @@ import (
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"contrib.go.opencensus.io/exporter/stackdriver/monitoredresource"
 	"contrib.go.opencensus.io/exporter/stackdriver/propagation"
+	gql "github.com/99designs/gqlgen/graphql"
+	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/apollotracing"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
-	"github.com/99designs/gqlgen/handler"
+	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/icco/charts"
 	"github.com/icco/gutil/logging"
 	"github.com/vektah/gqlparser/gqlerror"
@@ -183,8 +185,8 @@ func main() {
 			http.ServeFile(w, r, fmt.Sprintf("%s/server/views/static/%s", base, filename))
 		})
 
-		r.Handle("/play", handler.Playground("graphql", "/graphql"))
-		r.Handle("/graphql", buildGraphQLHandler())
+		r.Handle("/play", playground.Handler("charts", "/graphql"))
+		r.Handle("/graphql", gh)
 		r.Get("/graph/{graphID}", renderGraphHandler)
 	})
 	h := &ochttp.Handler{
