@@ -4,11 +4,10 @@ go 1.12
 
 require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.5
-	github.com/99designs/gqlgen v0.13.0
+	github.com/99designs/gqlgen v0.13.1-0.20210415065809-5ad012e3d7be
 	github.com/99designs/gqlgen-contrib v0.1.0
 	github.com/DATA-DOG/go-sqlmock v1.5.0 // indirect
 	github.com/GuiaBolso/darwin v0.0.0-20191218124601-fd6d2aa3d244
-	github.com/agnivade/levenshtein v1.1.0 // indirect
 	github.com/aws/aws-sdk-go v1.38.21 // indirect
 	github.com/blend/go-sdk v1.20210413.2 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
@@ -28,8 +27,8 @@ require (
 	github.com/opencensus-integrations/ocsql v0.1.7
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.6.1
-	github.com/vektah/gqlparser v1.3.1
-	github.com/vektah/gqlparser/v2 v2.2.0 // indirect
+	github.com/vektah/gqlparser v1.3.1 // indirect
+	github.com/vektah/gqlparser/v2 v2.2.0
 	github.com/wcharczuk/go-chart v2.0.1+incompatible
 	go.opencensus.io v0.23.0
 	golang.org/x/image v0.0.0-20210220032944-ac19c3e999fb // indirect
