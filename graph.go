@@ -194,12 +194,6 @@ func generateLineGraph(data []PairPoint, renderer chart.RendererProvider, w io.W
 	}
 
 	return chart.Chart{
-		XAxis: chart.XAxis{
-			Style: chart.StyleShow(),
-		},
-		YAxis: chart.YAxis{
-			Style: chart.StyleShow(),
-		},
 		Series: []chart.Series{
 			chart.ContinuousSeries{
 				XValues: xs,
@@ -224,12 +218,6 @@ func generateTimeGraph(data []TimePoint, renderer chart.RendererProvider, w io.W
 	}
 
 	return chart.Chart{
-		XAxis: chart.XAxis{
-			Style: chart.StyleShow(),
-		},
-		YAxis: chart.YAxis{
-			Style: chart.StyleShow(),
-		},
 		Series: []chart.Series{
 			chart.TimeSeries{
 				XValues: xs,
