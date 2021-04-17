@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/wcharczuk/go-chart" //exposes "chart"
+	chart "github.com/wcharczuk/go-chart/v2"
 	"go.uber.org/zap"
 )
 
