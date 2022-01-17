@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.10
-	github.com/99designs/gqlgen v0.15.0
+	github.com/99designs/gqlgen v0.15.1
 	github.com/DATA-DOG/go-sqlmock v1.5.0 // indirect
 	github.com/GuiaBolso/darwin v0.0.0-20191218124601-fd6d2aa3d244
 	github.com/agnivade/levenshtein v1.1.1 // indirect
