@@ -6,14 +6,12 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.10
 	github.com/99designs/gqlgen v0.15.1
 	github.com/DATA-DOG/go-sqlmock v1.5.0 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v1.0.0-RC1.0.20220111155622-771af0772772 // indirect
 	github.com/GuiaBolso/darwin v0.0.0-20191218124601-fd6d2aa3d244
 	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/aws/aws-sdk-go v1.42.35 // indirect
 	github.com/codegangsta/negroni v1.0.0 // indirect
 	github.com/cznic/ql v1.2.0 // indirect
 	github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385 // indirect
-	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-chi/cors v1.2.0
 	github.com/google/uuid v1.3.0
