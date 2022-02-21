@@ -16,7 +16,7 @@ require (
 	github.com/go-chi/cors v1.2.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
-	github.com/icco/gutil v0.0.0-20220220010526-7c82f1ebf02d
+	github.com/icco/gutil v0.0.0-20220221170217-9aa326c389ec
 	github.com/lib/pq v1.10.4
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/opencensus-integrations/ocsql v0.1.7
