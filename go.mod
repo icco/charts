@@ -12,7 +12,7 @@ require (
 	github.com/codegangsta/negroni v1.0.0 // indirect
 	github.com/cznic/ql v1.2.0 // indirect
 	github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385 // indirect
-	github.com/go-chi/chi/v5 v5.0.7
+	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-chi/cors v1.2.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
