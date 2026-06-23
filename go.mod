@@ -6,7 +6,7 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.10
 	github.com/99designs/gqlgen v0.15.1
 	github.com/GuiaBolso/darwin v0.0.0-20191218124601-fd6d2aa3d244
-	github.com/go-chi/chi/v5 v5.2.2
+	github.com/go-chi/chi/v5 v5.2.4
 	github.com/go-chi/cors v1.2.0
 	github.com/google/uuid v1.3.0
 	github.com/icco/gutil v0.0.0-20220221170217-9aa326c389ec
