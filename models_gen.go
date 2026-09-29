@@ -3,6 +3,7 @@
 package charts
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strconv"
@@ -23,18 +24,21 @@ type MetaInput struct {
 	Value string `json:"value"`
 }
 
+type Mutation struct {
+}
+
 type NewLineGraph struct {
-	Description *string           `json:"description"`
+	Description *string           `json:"description,omitempty"`
 	Data        []*PairPointInput `json:"data"`
 }
 
 type NewPieGraph struct {
-	Description *string          `json:"description"`
+	Description *string          `json:"description,omitempty"`
 	Data        []*PiePointInput `json:"data"`
 }
 
 type NewTimeseriesGraph struct {
-	Description *string           `json:"description"`
+	Description *string           `json:"description,omitempty"`
 	Data        []*TimePointInput `json:"data"`
 }
 
@@ -49,7 +53,7 @@ func (PairPoint) IsDataPoint() {}
 type PairPointInput struct {
 	X    float64      `json:"x"`
 	Y    float64      `json:"y"`
-	Meta []*MetaInput `json:"meta"`
+	Meta []*MetaInput `json:"meta,omitempty"`
 }
 
 type PiePoint struct {
@@ -61,7 +65,10 @@ func (PiePoint) IsDataPoint() {}
 
 type PiePointInput struct {
 	Percent float64      `json:"percent"`
-	Meta    []*MetaInput `json:"meta"`
+	Meta    []*MetaInput `json:"meta,omitempty"`
+}
+
+type Query struct {
 }
 
 type TimePoint struct {
@@ -75,7 +82,7 @@ func (TimePoint) IsDataPoint() {}
 type TimePointInput struct {
 	Timestamp time.Time    `json:"timestamp"`
 	Value     float64      `json:"value"`
-	Meta      []*MetaInput `json:"meta"`
+	Meta      []*MetaInput `json:"meta,omitempty"`
 }
 
 type GraphType string
@@ -104,7 +111,7 @@ func (e GraphType) String() string {
 	return string(e)
 }
 
-func (e *GraphType) UnmarshalGQL(v interface{}) error {
+func (e *GraphType) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
@@ -118,5 +125,19 @@ func (e *GraphType) UnmarshalGQL(v interface{}) error {
 }
 
 func (e GraphType) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
+	_, _ = fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *GraphType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e GraphType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }

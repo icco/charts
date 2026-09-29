@@ -23,6 +23,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.icco.me/charts"
 	"go.icco.me/gutil/logging"
@@ -99,7 +100,7 @@ func main() {
 	gh.AddTransport(transport.POST{})
 	gh.AddTransport(transport.MultipartForm{})
 	gh.Use(apollotracing.Tracer{})
-	gh.SetQueryCache(lru.New(1000))
+	gh.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 	gh.Use(extension.Introspection{})
 
 	gh.SetErrorPresenter(func(ctx context.Context, e error) *gqlerror.Error {
@@ -128,7 +129,7 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(middleware.RealIP)
-	r.Use(logging.Middleware(log.Desugar(), "icco-cloud"))
+	r.Use(logging.Middleware(log.Desugar()))
 	r.Use(cors.New(cors.Options{
 		AllowCredentials:   true,
 		OptionsPassthrough: true,
