@@ -1,4 +1,4 @@
-module github.com/icco/charts
+module go.icco.me/charts
 
 go 1.25.0
 
