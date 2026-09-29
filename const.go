@@ -1,6 +1,6 @@
 package charts
 
-import "github.com/icco/gutil/logging"
+import "go.icco.me/gutil/logging"
 
 const (
 	Service = "charts"

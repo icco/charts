@@ -1,7 +1,7 @@
 # charts
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/icco/charts)](https://goreportcard.com/report/github.com/icco/charts)
-[![GoDoc](https://godoc.org/github.com/icco/charts?status.svg)](https://godoc.org/github.com/icco/charts)
+[![GoDoc](https://pkg.go.dev/badge/go.icco.me/charts.svg)](https://pkg.go.dev/go.icco.me/charts)
 [![Build Status](https://travis-ci.org/icco/charts.svg?branch=master)](https://travis-ci.org/icco/charts)
 
 An API for chart generation.

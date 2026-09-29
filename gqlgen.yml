@@ -12,6 +12,6 @@ resolver:
   type: Resolver
 models:
   Graph:
-    model: github.com/icco/charts.Graph
+    model: go.icco.me/charts.Graph
   User:
-    model: github.com/icco/charts.User
+    model: go.icco.me/charts.User
