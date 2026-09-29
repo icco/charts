@@ -1,4 +1,4 @@
-FROM golang:1.16-alpine
+FROM golang:1.26-alpine
 ENV GO111MODULE=on
 EXPOSE 8080
 WORKDIR /go/src/github.com/icco/charts
